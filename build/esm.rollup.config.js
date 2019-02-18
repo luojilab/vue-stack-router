@@ -1,0 +1,11 @@
+import typescript from "rollup-plugin-typescript";
+export default {
+  input: "./src/index.ts",
+  output: {
+    file: "dist/vue-stack-router.esm.js",
+    format: "es",
+    name: "VueStackRouter"
+  },
+  plugins: [typescript({ target: "es5" })],
+  external: ["vue"]
+};
