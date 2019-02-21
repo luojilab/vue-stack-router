@@ -1,14 +1,13 @@
 import Vue, { CreateElement, VNode } from 'vue';
-import { NavigateActionType } from '../interface/common';
-import { IRoute, IRouteConfig, IRouter, RouterEventType } from '../interface/router';
+import { RouteActionType, RouteEventType } from '../interface/common';
+import { IRoute, IRouteConfig, IRouter } from '../interface/router';
 
 interface IData {
-  currentPageId?: string;
-  preRouter?: IRoute;
+  preRoute?: IRoute;
   currentRoute?: IRoute;
   currentRouteConfig?: IRouteConfig;
   vnodeCache: Map<string, VNode>;
-  actionType: NavigateActionType;
+  actionType: RouteActionType;
 }
 interface ITransitionDurationConfig {
   enter: number;
@@ -29,32 +28,25 @@ interface IPageViewProps {
 
 export default Vue.extend({
   name: 'RouterView',
-  data(): IData {
-    return {
-      currentPageId: '',
-      vnodeCache: new Map(),
-      actionType: NavigateActionType.NONE
-    };
+  data() {
+    return {} as IData;
   },
   props: {
-    router: {
-      type: Object as PropsTypes<IRouter | undefined>,
-      required: false
-    },
-    transition: {
-      type: Object as PropsTypes<ITransitionOptions | undefined>,
-      required: false
-    }
+    router: Object as PropsTypes<IRouter | undefined>,
+    transition: ([Object, String] as unknown) as PropsTypes<ITransitionOptions | string | undefined>
   },
   render(h: CreateElement): VNode {
-    if (!this.currentPageId || !this.currentRoute || !this.currentRouteConfig) {
+    if (!this.currentRoute || !this.currentRouteConfig) {
       return h();
     }
 
-    const cachedVNode = this.vnodeCache.get(this.currentPageId || '');
+    const cachedVNode = this.vnodeCache.get(this.currentRoute.id || '');
     const vnode = h(this.currentRouteConfig.component, {
       props: this.getPageViewProps()
     });
+    if (this.currentRoute.id !== '') {
+      vnode.tag = `${vnode.tag}-${this.currentRoute.id}`;
+    }
     if (cachedVNode !== undefined) {
       vnode.componentInstance = cachedVNode.componentInstance;
     }
@@ -70,23 +62,29 @@ export default Vue.extend({
     return vnode;
   },
   created() {
+    this.vnodeCache = new Map();
+    this.actionType = RouteActionType.NONE;
     const router = this.getRouter();
     this.currentRoute = router.currentRoute;
     this.currentRouteConfig = router.currentRouteConfig;
-    this.currentPageId = this.currentRoute && this.currentRoute.id;
-    router.on(RouterEventType.CHANGE, this.handleRouteChange);
-    router.on(RouterEventType.DESTROY, this.handleRouteDestroy);
+    router.on(RouteEventType.CHANGE, this.handleRouteChange);
+    router.on(RouteEventType.DESTROY, this.handleRouteDestroy);
+  },
+  destroyed() {
+    const router = this.getRouter();
+    router.off(RouteEventType.CHANGE, this.handleRouteChange);
+    router.off(RouteEventType.DESTROY, this.handleRouteDestroy);
   },
   methods: {
     getRouter() {
       return this.router || this.$router;
     },
-    handleRouteChange(type: NavigateActionType, route?: IRoute, routeConfig?: IRouteConfig) {
-      this.preRouter = this.currentRoute;
+    handleRouteChange(type: RouteActionType, route?: IRoute, routeConfig?: IRouteConfig) {
+      this.preRoute = this.currentRoute;
       this.currentRoute = route;
       this.currentRouteConfig = routeConfig;
       this.actionType = type;
-      this.currentPageId = route && route.id;
+      this.$forceUpdate();
     },
     handleRouteDestroy(ids: string[]) {
       ids.forEach(id => {
@@ -100,11 +98,15 @@ export default Vue.extend({
     getTransitionProps(): Partial<ITransitionOptions> {
       const props: Partial<ITransitionOptions> = {};
       if (this.transition) {
-        if (this.transition.name) {
-          props.name = `${this.transition.name}-${this.actionType}`;
+        if (typeof this.transition === 'string') {
+          props.name = `${this.transition}-${this.actionType}`;
+        } else {
+          if (this.transition.name) {
+            props.name = `${this.transition.name}-${this.actionType}`;
+          }
+          props.duration = this.transition.duration;
+          props.mode = this.transition.mode;
         }
-        props.duration = this.transition.duration;
-        props.mode = this.transition.mode;
       }
       return props;
     },
