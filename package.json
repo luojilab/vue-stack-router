@@ -23,9 +23,11 @@
     "tslib": "^1.9.3",
     "tslint": "^5.12.0",
     "tslint-config-airbnb-base": "^0.2.0",
-    "typescript": "^3.3.3"
+    "typescript": "^3.3.3",
+    "vue": "^2.6.6"
   },
   "peerDependencies": {
     "vue": "^2.5.21"
-  }
+  },
+  "dependencies": {}
 }
