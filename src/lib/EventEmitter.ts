@@ -1,11 +1,9 @@
 import { IBaseEventType, IEventEmitter } from '../interface/common';
 
-type Listener<T extends Array<unknown>> = (...params: T) => void;
-
 export default class EventEmitter<T extends IBaseEventType> implements IEventEmitter<T> {
   private storage: Map<keyof T, Set<unknown>> = new Map();
 
-  public on<K extends keyof T>(type: K, listener: Listener<T[K]>): void {
+  public on<K extends keyof T>(type: K, listener: T[K]): void {
     let listeners = this.storage.get(type);
     if (listeners === undefined) {
       listeners = new Set();
@@ -14,7 +12,7 @@ export default class EventEmitter<T extends IBaseEventType> implements IEventEmi
     listeners.add(listener);
   }
 
-  public off<K extends keyof T>(type: K, listener: Listener<T[K]>): void {
+  public off<K extends keyof T>(type: K, listener: T[K]): void {
     const listeners = this.storage.get(type);
     if (listeners !== undefined) {
       listeners.delete(listener);
@@ -24,7 +22,7 @@ export default class EventEmitter<T extends IBaseEventType> implements IEventEmi
     }
   }
 
-  public emit<K extends keyof T>(type: K, ...params: T[K]) {
+  public emit<K extends keyof T>(type: K, ...params: Parameters<T[K]>) {
     const listeners = this.storage.get(type);
     if (listeners !== undefined) {
       listeners.forEach(cb => {
