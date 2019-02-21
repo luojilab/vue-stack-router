@@ -1,9 +1,13 @@
-import { IBaseEventType, IEventEmitter, IRouteRecord, NavigateActionType } from './common';
-export interface IDriverEvent extends IBaseEventType {
-  [NavigateActionType.PUSH]: [IRouteRecord];
-  [NavigateActionType.REPLACE]: [IRouteRecord];
-  [NavigateActionType.POP]: [IRouteRecord, IRouteRecord[]];
+import { IBaseEventType, IEventEmitter, IRouteRecord } from './common';
+export enum RouteDriverEventType {
+  CHANGE = 'change',
+  WILL_CHANGE = 'willChange'
 }
+export interface IDriverEvent extends IBaseEventType {
+  [RouteDriverEventType.CHANGE]: (routeRecord: IRouteRecord) => void;
+  [RouteDriverEventType.WILL_CHANGE]: (route: IRouteRecord, oldRoute: IRouteRecord, abort: () => void) => void;
+}
+
 export interface IRouterDriver extends IEventEmitter<IDriverEvent> {
   push(path: string, state?: unknown): void;
   pop(): void;

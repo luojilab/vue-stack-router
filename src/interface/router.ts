@@ -1,5 +1,5 @@
 import { Component } from 'vue';
-import { IBaseEventType, IEventEmitter, IQuery, NavigateActionType } from './common';
+import { IBaseEventType, IEventEmitter, IQuery, RouteActionType, RouteEventType } from './common';
 
 export interface IRouterOption {
   routes: IRouteConfig[];
@@ -28,19 +28,14 @@ export interface IRoute {
   state?: unknown;
 }
 
-export enum RouterEventType {
-  CHANGE = 'change',
-  DESTROY = 'destroy'
-}
-
 export interface IRouterEvent extends IBaseEventType {
-  [RouterEventType.CHANGE]: [NavigateActionType, IRoute?, IRouteConfig?];
-  [RouterEventType.DESTROY]: [string[]];
+  [RouteEventType.CHANGE]: (type: RouteActionType, route?: IRoute, config?: IRouteConfig) => void;
+  [RouteEventType.DESTROY]: (ids: string[]) => void;
 }
 
 export interface IRouter extends IEventEmitter<IRouterEvent> {
   readonly currentRoute: IRoute | undefined;
-  readonly currentRouteConfig:IRouteConfig | undefined;
+  readonly currentRouteConfig: IRouteConfig | undefined;
   push(pathname: string, options?: Partial<INavigateOption>): void;
   pop(): void;
   replace(pathname: string, options?: INavigateOption): void;

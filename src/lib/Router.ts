@@ -1,14 +1,6 @@
-import { IRouteRecord, NavigateActionType } from '../interface/common';
+import { IRouteRecord, RouteActionType, RouteEventType } from '../interface/common';
 import { IRouterDriver } from '../interface/driver';
-import {
-  INavigateOption,
-  IRoute,
-  IRouteConfig,
-  IRouter,
-  IRouterEvent,
-  IRouterOption,
-  RouterEventType
-} from '../interface/router';
+import { INavigateOption, IRoute, IRouteConfig, IRouter, IRouterEvent, IRouterOption } from '../interface/router';
 import { getPathnameAndQuery } from '../utils/helpers';
 import EventEmitter from './EventEmitter';
 interface IRouteInfo {
@@ -17,6 +9,7 @@ interface IRouteInfo {
 }
 export default class Router extends EventEmitter<IRouterEvent> implements IRouter {
   public routes: Map<string, IRouteConfig> = new Map();
+  private routeStack: string[] = [];
   private currentRouteInfo: IRouteInfo | undefined = undefined;
   private driver: IRouterDriver;
   constructor(options: IRouterOption, driver: IRouterDriver) {
@@ -31,10 +24,10 @@ export default class Router extends EventEmitter<IRouterEvent> implements IRoute
     return this.currentRouteInfo && this.currentRouteInfo.route;
   }
 
-  get currentRouteConfig():IRouteConfig | undefined {
+  get currentRouteConfig(): IRouteConfig | undefined {
     return this.currentRouteInfo && this.currentRouteInfo.config;
   }
-  
+
   public push(pathname: string, option?: Partial<INavigateOption>): void {
     const { path, state } = this.getPathAndState(pathname, option);
     this.driver.push(path, state);
@@ -47,23 +40,6 @@ export default class Router extends EventEmitter<IRouterEvent> implements IRoute
   public replace(pathname: string, option?: Partial<INavigateOption>): void {
     const { path, state } = this.getPathAndState(pathname, option);
     this.driver.replace(path, state);
-  }
-
-  private handlePush(route: IRouteRecord): void {
-    this.updateCurrentRoute(route);
-    this.componentChange(NavigateActionType.PUSH);
-  }
-
-  private handlePop(route: IRouteRecord, destroyedRoute: IRouteRecord[]) {
-    this.updateCurrentRoute(route);
-    this.componentChange(NavigateActionType.POP);
-    const ids = destroyedRoute.map(r => r.id);
-    this.emit(RouterEventType.DESTROY, ids);
-  }
-
-  private handleReplace(route: IRouteRecord) {
-    this.updateCurrentRoute(route);
-    this.componentChange(NavigateActionType.REPLACE);
   }
 
   private getPathAndState(path: string, option?: Partial<INavigateOption>) {
@@ -94,12 +70,11 @@ export default class Router extends EventEmitter<IRouterEvent> implements IRoute
     };
   }
 
-  private updateCurrentRoute(route: IRouteRecord): void {
-    const { id, path, state } = route;
+  private updateCurrentRoute(id: string, path: string, state: unknown): boolean {
     const matchedRoute = this.matchRoute(path);
     if (matchedRoute === undefined) {
       this.currentRouteInfo = undefined;
-      return;
+      return false;
     }
     const { routeConfig, query, params } = matchedRoute;
     this.currentRouteInfo = {
@@ -113,11 +88,12 @@ export default class Router extends EventEmitter<IRouterEvent> implements IRoute
       },
       config: routeConfig
     };
+    return true;
   }
 
-  private componentChange(type: NavigateActionType): void {
+  private componentChange(type: RouteActionType): void {
     this.emit(
-      RouterEventType.CHANGE,
+      RouteEventType.CHANGE,
       type,
       this.currentRouteInfo && this.currentRouteInfo.route,
       this.currentRouteInfo && this.currentRouteInfo.config
@@ -125,10 +101,34 @@ export default class Router extends EventEmitter<IRouterEvent> implements IRoute
   }
 
   private initDriverListener() {
-    this.driver.on(NavigateActionType.POP, (r: IRouteRecord, destroyedRoute: IRouteRecord[] = []) =>
-      this.handlePop(r, destroyedRoute)
-    );
-    this.driver.on(NavigateActionType.PUSH, (r: IRouteRecord) => this.handlePush(r));
-    this.driver.on(NavigateActionType.REPLACE, (r: IRouteRecord) => this.handleReplace(r));
+    this.driver.on(RouteEventType.CHANGE, routeRecord => this.handleRouteChange(routeRecord));
+  }
+
+  private handleRouteChange(routeRecord: IRouteRecord): any {
+    const { type, id, path, state } = routeRecord;
+    this.updateCurrentRoute(id, path, state);
+    this.componentChange(type);
+    this.updateRouteRecords(type, id);
+  }
+  private updateRouteRecords(type: RouteActionType, id: string): void {
+    switch (type) {
+      case RouteActionType.PUSH:
+        this.routeStack.push(id);
+        break;
+      case RouteActionType.REPLACE:
+      case RouteActionType.NONE:
+        this.routeStack.pop();
+        this.routeStack.push(id);
+        break;
+      case RouteActionType.POP:
+        const index = this.routeStack.findIndex(i => id === i);
+        if (index === -1) {
+          this.routeStack.push(id);
+        } else {
+          const destroyedIds = this.routeStack.splice(index + 1, this.routeStack.length - index - 1);
+          this.emit(RouteEventType.DESTROY, destroyedIds);
+        }
+
+    }
   }
 }
