@@ -1,5 +1,5 @@
 import { IRouteRecord, RouteActionType, RouteEventType } from '../interface/common';
-import { IRouterDriver } from '../interface/driver';
+import { IRouterDriver, RouteDriverEventType } from '../interface/driver';
 import { INavigateOption, IRoute, IRouteConfig, IRouter, IRouterEvent, IRouterOption } from '../interface/router';
 import { getPathnameAndQuery } from '../utils/helpers';
 import EventEmitter from './EventEmitter';
@@ -101,7 +101,7 @@ export default class Router extends EventEmitter<IRouterEvent> implements IRoute
   }
 
   private initDriverListener() {
-    this.driver.on(RouteEventType.CHANGE, routeRecord => this.handleRouteChange(routeRecord));
+    this.driver.on(RouteDriverEventType.CHANGE, (routeRecord: IRouteRecord) => this.handleRouteChange(routeRecord));
   }
 
   private handleRouteChange(routeRecord: IRouteRecord): any {
