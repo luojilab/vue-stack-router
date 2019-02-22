@@ -1,9 +1,9 @@
-import { IBaseEventType, IEventEmitter, IRouteRecord } from './common';
+import {  IEventEmitter, IRouteRecord } from './common';
 export enum RouteDriverEventType {
   CHANGE = 'change',
   WILL_CHANGE = 'willChange'
 }
-export interface IDriverEvent extends IBaseEventType {
+export interface IDriverEvent {
   [RouteDriverEventType.CHANGE]: (routeRecord: IRouteRecord) => void;
   [RouteDriverEventType.WILL_CHANGE]: (route: IRouteRecord, oldRoute: IRouteRecord, abort: () => void) => void;
 }

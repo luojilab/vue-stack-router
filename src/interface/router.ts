@@ -1,5 +1,5 @@
 import { Component } from 'vue';
-import { IBaseEventType, IEventEmitter, IQuery, RouteActionType, RouteEventType } from './common';
+import { IEventEmitter, IQuery, RouteActionType, RouteEventType } from './common';
 
 export interface IRouterOption {
   routes: IRouteConfig[];
@@ -28,7 +28,7 @@ export interface IRoute {
   state?: unknown;
 }
 
-export interface IRouterEvent extends IBaseEventType {
+export interface IRouterEvent {
   [RouteEventType.CHANGE]: (type: RouteActionType, route?: IRoute, config?: IRouteConfig) => void;
   [RouteEventType.DESTROY]: (ids: string[]) => void;
 }

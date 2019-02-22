@@ -1,10 +1,7 @@
-export interface IBaseEventType {
-  [k: string]: (...params: any[]) => void;
-}
-export interface IEventEmitter<T extends IBaseEventType> {
+export interface IEventEmitter<T> {
   on<K extends keyof T>(type: K, listener: T[K]): void;
   off<K extends keyof T>(type: K, listener: T[K]): void;
-  emit<K extends keyof T>(type: K, ...params: Parameters<T[K]>): void;
+  emit<K extends keyof T>(type: K, ...params: Parameters<T[K] extends (...args: any[]) => any ? T[K] : never>): void;
 }
 
 export enum RouteActionType {
