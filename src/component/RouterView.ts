@@ -4,8 +4,8 @@ import { IRoute, IRouteConfig, IRouter } from '../interface/router';
 
 interface IData {
   preRoute?: IRoute;
-  currentRoute?: IRoute;
-  currentRouteConfig?: IRouteConfig;
+  route?: IRoute;
+  routeConfig?: IRouteConfig;
   vnodeCache: Map<string, VNode>;
   actionType: RouteActionType;
 }
@@ -36,21 +36,19 @@ export default Vue.extend({
     transition: ([Object, String] as unknown) as PropsTypes<ITransitionOptions | string | undefined>
   },
   render(h: CreateElement): VNode {
-    if (!this.currentRoute || !this.currentRouteConfig) {
+    if (!this.route || !this.routeConfig) {
       return h();
     }
 
-    const cachedVNode = this.vnodeCache.get(this.currentRoute.id || '');
-    const vnode = h(this.currentRouteConfig.component, {
+    const cachedVNode = this.vnodeCache.get(this.route.id);
+    const vnode = h(this.routeConfig.component, {
       props: this.getPageViewProps()
     });
-    if (this.currentRoute.id !== '') {
-      vnode.tag = `${vnode.tag}-${this.currentRoute.id}`;
-    }
+    vnode.tag = `${vnode.tag}-${this.route.id}`;
     if (cachedVNode !== undefined) {
       vnode.componentInstance = cachedVNode.componentInstance;
     }
-    this.vnodeCache.set(this.currentRoute.id, vnode);
+    this.vnodeCache.set(this.route.id, vnode);
     vnode.data!.keepAlive = true;
     if (this.transition) {
       const vnodeData = {
@@ -65,8 +63,8 @@ export default Vue.extend({
     this.vnodeCache = new Map();
     this.actionType = RouteActionType.NONE;
     const router = this.getRouter();
-    this.currentRoute = router.currentRoute;
-    this.currentRouteConfig = router.currentRouteConfig;
+    this.route = router.currentRoute;
+    this.routeConfig = router.currentRouteConfig;
     router.on(RouteEventType.CHANGE, this.handleRouteChange);
     router.on(RouteEventType.DESTROY, this.handleRouteDestroy);
   },
@@ -80,9 +78,10 @@ export default Vue.extend({
       return this.router || this.$router;
     },
     handleRouteChange(type: RouteActionType, route?: IRoute, routeConfig?: IRouteConfig) {
-      this.preRoute = this.currentRoute;
-      this.currentRoute = route;
-      this.currentRouteConfig = routeConfig;
+      if (this.route && route && (this.route.id === route.id)) { return; }
+      this.preRoute = this.route;
+      this.route = route;
+      this.routeConfig = routeConfig;
       this.actionType = type;
       this.$forceUpdate();
     },
@@ -125,8 +124,8 @@ export default Vue.extend({
         query: {},
         state: undefined
       };
-      if (this.currentRoute) {
-        const { path, params, query, state } = this.currentRoute;
+      if (this.route) {
+        const { path, params, query, state } = this.route;
         Object.assign(props, { params, query, state, path });
       }
       return props;
