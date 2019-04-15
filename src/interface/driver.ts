@@ -6,6 +6,7 @@ export enum RouteDriverEventType {
 export interface IDriverEvent {
   [RouteDriverEventType.CHANGE]: (routeRecord: IRouteRecord) => void;
   [RouteDriverEventType.WILL_CHANGE]: (route: IRouteRecord, oldRoute: IRouteRecord, abort: () => void) => void;
+
 }
 
 export interface IRouterDriver extends IEventEmitter<IDriverEvent> {

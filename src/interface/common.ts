@@ -29,6 +29,8 @@ export interface IQuery {
 }
 
 export enum RouteEventType {
+  WILL_CHANGE = 'willChange',
+  CANCEL_CHANGE = 'cancelChange',
   CHANGE = 'change',
   DESTROY = 'destroy'
 }

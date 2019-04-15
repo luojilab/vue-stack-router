@@ -29,14 +29,23 @@ export interface IRoute {
 }
 
 export interface IRouterEvent {
-  [RouteEventType.CHANGE]: (type: RouteActionType, route?: IRoute, config?: IRouteConfig) => void;
+  [RouteEventType.CHANGE]: (type: RouteActionType, route?: IRouteInfo) => void;
+  [RouteEventType.WILL_CHANGE]: (type: RouteActionType, route?: IRouteInfo) => void;
+  [RouteEventType.CANCEL_CHANGE]: (routeInfo: IRouteInfo) => void;
   [RouteEventType.DESTROY]: (ids: string[]) => void;
 }
-
+export type preActionCallback = (cancel: boolean) => void;
 export interface IRouter extends IEventEmitter<IRouterEvent> {
-  readonly currentRoute: IRoute | undefined;
-  readonly currentRouteConfig: IRouteConfig | undefined;
+  readonly currentRouteInfo: IRouteInfo | undefined;
   push(pathname: string, options?: Partial<INavigateOption>): void;
+  prepush(pathname: string, options?: Partial<INavigateOption>): preActionCallback;
   pop(): void;
+  prepop(): preActionCallback;
   replace(pathname: string, options?: INavigateOption): void;
+  prereplace(pathname: string, options?: INavigateOption): preActionCallback;
+}
+
+export interface IRouteInfo {
+  route: IRoute;
+  config: IRouteConfig;
 }

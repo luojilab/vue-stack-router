@@ -1,7 +1,7 @@
-import VueStackRouter from './lib/Router';
+import { IRouter } from './interface/router';
 
 declare module 'vue/types/vue' {
   interface Vue {
-    $router: VueStackRouter;
+    $router: IRouter;
   }
 }

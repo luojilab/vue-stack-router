@@ -1,16 +1,24 @@
 import { IRouteRecord, RouteActionType, RouteEventType } from '../interface/common';
 import { IRouterDriver, RouteDriverEventType } from '../interface/driver';
-import { INavigateOption, IRoute, IRouteConfig, IRouter, IRouterEvent, IRouterOption } from '../interface/router';
+import {
+  INavigateOption,
+  IRoute,
+  IRouteConfig,
+  IRouteInfo,
+  IRouter,
+  IRouterEvent,
+  IRouterOption,
+  preActionCallback
+} from '../interface/router';
 import { getPathnameAndQuery } from '../utils/helpers';
 import EventEmitter from './EventEmitter';
-interface IRouteInfo {
-  route: IRoute;
-  config: IRouteConfig;
-}
+
 export default class Router extends EventEmitter<IRouterEvent> implements IRouter {
   public routes: Map<string, IRouteConfig> = new Map();
-  private routeStack: string[] = [];
-  private currentRouteInfo: IRouteInfo | undefined = undefined;
+  public get currentRouteInfo(): IRouteInfo | undefined {
+    return this.routeStack[this.routeStack.length - 1];
+  }
+  private routeStack: IRouteInfo[] = [];
   private driver: IRouterDriver;
   constructor(options: IRouterOption, driver: IRouterDriver) {
     super();
@@ -20,12 +28,27 @@ export default class Router extends EventEmitter<IRouterEvent> implements IRoute
     this.driver.receiverReady();
   }
 
-  get currentRoute(): IRoute | undefined {
-    return this.currentRouteInfo && this.currentRouteInfo.route;
+  public prepush(pathname: string, options?: Partial<INavigateOption>): preActionCallback {
+    throw new Error('Method not implemented.');
   }
 
-  get currentRouteConfig(): IRouteConfig | undefined {
-    return this.currentRouteInfo && this.currentRouteInfo.config;
+  public prepop(): preActionCallback {
+    if (this.routeStack.length <= 1) {
+      return (cancel: boolean) => undefined;
+    }
+    const nextRouteInfo = this.routeStack[this.routeStack.length - 2];
+    this.emit(RouteEventType.WILL_CHANGE, RouteActionType.POP, nextRouteInfo);
+    return (cancel: boolean) => {
+      if (cancel) {
+        this.emit(RouteEventType.CANCEL_CHANGE, nextRouteInfo);
+      } else {
+        this.pop();
+      }
+    };
+  }
+
+  public prereplace(pathname: string, options?: INavigateOption): preActionCallback {
+    throw new Error('Method not implemented.');
   }
 
   public push(pathname: string, option?: Partial<INavigateOption>): void {
@@ -70,14 +93,13 @@ export default class Router extends EventEmitter<IRouterEvent> implements IRoute
     };
   }
 
-  private updateCurrentRoute(id: string, path: string, state: unknown): boolean {
+  private getRouteInfo(id: string, path: string, state: unknown): IRouteInfo | undefined {
     const matchedRoute = this.matchRoute(path);
     if (matchedRoute === undefined) {
-      this.currentRouteInfo = undefined;
-      return false;
+      return;
     }
     const { routeConfig, query, params } = matchedRoute;
-    this.currentRouteInfo = {
+    return {
       route: {
         id,
         name: routeConfig.name || '',
@@ -88,47 +110,45 @@ export default class Router extends EventEmitter<IRouterEvent> implements IRoute
       },
       config: routeConfig
     };
-    return true;
   }
 
-  private componentChange(type: RouteActionType): void {
-    this.emit(
-      RouteEventType.CHANGE,
-      type,
-      this.currentRouteInfo && this.currentRouteInfo.route,
-      this.currentRouteInfo && this.currentRouteInfo.config
-    );
+  private componentChange(type: RouteActionType, routeInfo: IRouteInfo): void {
+    this.emit(RouteEventType.CHANGE, type, routeInfo);
   }
 
   private initDriverListener() {
     this.driver.on(RouteDriverEventType.CHANGE, (routeRecord: IRouteRecord) => this.handleRouteChange(routeRecord));
   }
 
-  private handleRouteChange(routeRecord: IRouteRecord): any {
+  private handleRouteChange(routeRecord: IRouteRecord): void {
     const { type, id, path, state } = routeRecord;
-    this.updateCurrentRoute(id, path, state);
-    this.componentChange(type);
-    this.updateRouteRecords(type, id);
+    const routeInfo = this.getRouteInfo(id, path, state);
+    if (routeInfo === undefined) {
+      return;
+    }
+    this.updateRouteRecords(type, routeInfo);
+    this.componentChange(type, routeInfo);
   }
-  private updateRouteRecords(type: RouteActionType, id: string): void {
+  private updateRouteRecords(type: RouteActionType, routeInfo: IRouteInfo): void {
     switch (type) {
       case RouteActionType.PUSH:
-        this.routeStack.push(id);
+        this.routeStack.push(routeInfo);
         break;
       case RouteActionType.REPLACE:
       case RouteActionType.NONE:
         this.routeStack.pop();
-        this.routeStack.push(id);
+        this.routeStack.push(routeInfo);
         break;
       case RouteActionType.POP:
-        const index = this.routeStack.findIndex(i => id === i);
+        const index = this.routeStack.findIndex(i => routeInfo.route.id === i.route.id);
         if (index === -1) {
-          this.routeStack.push(id);
+          this.routeStack.push(routeInfo);
         } else {
-          const destroyedIds = this.routeStack.splice(index + 1, this.routeStack.length - index - 1);
+          const destroyedIds = this.routeStack
+            .splice(index + 1, this.routeStack.length - index - 1)
+            .map(r => r.route.id);
           this.emit(RouteEventType.DESTROY, destroyedIds);
         }
-
     }
   }
 }

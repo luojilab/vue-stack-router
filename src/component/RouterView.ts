@@ -1,13 +1,13 @@
 import Vue, { CreateElement, VNode } from 'vue';
 import { RouteActionType, RouteEventType } from '../interface/common';
-import { IRoute, IRouteConfig, IRouter } from '../interface/router';
+import { IRoute, IRouteInfo, IRouter } from '../interface/router';
 
 interface IData {
-  preRoute?: IRoute;
-  route?: IRoute;
-  routeConfig?: IRouteConfig;
+  routeInfo?: IRouteInfo;
+  nextRouteInfo?: IRouteInfo;
   vnodeCache: Map<string, VNode>;
-  actionType: RouteActionType;
+  actionType?: RouteActionType;
+  nextActionType?: RouteActionType;
 }
 interface ITransitionDurationConfig {
   enter: number;
@@ -36,53 +36,100 @@ export default Vue.extend({
     transition: ([Object, String] as unknown) as PropsTypes<ITransitionOptions | string | undefined>
   },
   render(h: CreateElement): VNode {
-    if (!this.route || !this.routeConfig) {
+    if (!this.routeInfo) {
       return h();
     }
-
-    const cachedVNode = this.vnodeCache.get(this.route.id);
-    const vnode = h(this.routeConfig.component, {
-      props: this.getPageViewProps()
-    });
-    vnode.tag = `${vnode.tag}-${this.route.id}`;
-    if (cachedVNode !== undefined) {
-      vnode.componentInstance = cachedVNode.componentInstance;
+    const vnode = this.renderRoute(h, this.routeInfo);
+    if (this.nextRouteInfo) {
+      const nextVNode = this.renderRoute(h, this.nextRouteInfo);
+      const children = this.nextActionType === RouteActionType.POP ? [nextVNode, vnode] : [vnode, nextVNode];
+      // TODO Vue does not support fragment, wrap them with a div
+      return h('div', {}, children);
     }
-    this.vnodeCache.set(this.route.id, vnode);
-    vnode.data!.keepAlive = true;
     if (this.transition) {
       const vnodeData = {
         props: this.getTransitionProps(),
         on: this.getTransitionListener()
       };
-      return h('transition', vnodeData, [vnode]);
+      return h('div', {}, [h('transition', vnodeData, [vnode])]);
     }
-    return vnode;
+
+    return h('div', {}, [vnode]);
   },
   created() {
     this.vnodeCache = new Map();
     this.actionType = RouteActionType.NONE;
     const router = this.getRouter();
-    this.route = router.currentRoute;
-    this.routeConfig = router.currentRouteConfig;
+    this.routeInfo = router.currentRouteInfo;
     router.on(RouteEventType.CHANGE, this.handleRouteChange);
+    router.on(RouteEventType.WILL_CHANGE, this.handleRouteWillChange);
+    router.on(RouteEventType.CANCEL_CHANGE, this.handleRouteChangeCancel);
     router.on(RouteEventType.DESTROY, this.handleRouteDestroy);
   },
   destroyed() {
     const router = this.getRouter();
     router.off(RouteEventType.CHANGE, this.handleRouteChange);
+    router.off(RouteEventType.WILL_CHANGE, this.handleRouteWillChange);
+    router.off(RouteEventType.CANCEL_CHANGE, this.handleRouteChangeCancel);
     router.off(RouteEventType.DESTROY, this.handleRouteDestroy);
   },
   methods: {
+    renderRoute(h: CreateElement, routeInfo: IRouteInfo): VNode {
+      const { config, route } = routeInfo;
+      const cachedVNode = this.vnodeCache.get(route.id);
+      const vnode = h(config.component, {
+        props: this.getPageViewProps(routeInfo)
+      });
+      vnode.tag = `${vnode.tag}-${route.id}`;
+      if (cachedVNode !== undefined) {
+        vnode.componentInstance = cachedVNode.componentInstance;
+      }
+      this.vnodeCache.set(route.id, vnode);
+      // vnode.data!.keepAlive = true;
+
+      return vnode;
+    },
     getRouter() {
       return this.router || this.$router;
     },
-    handleRouteChange(type: RouteActionType, route?: IRoute, routeConfig?: IRouteConfig) {
-      if (this.route && route && (this.route.id === route.id)) { return; }
-      this.preRoute = this.route;
-      this.route = route;
-      this.routeConfig = routeConfig;
-      this.actionType = type;
+    handleRouteChange(type: RouteActionType, routeInfo?: IRouteInfo) {
+      if (routeInfo === undefined) {
+        return;
+      }
+      if (this.routeInfo && this.routeInfo.route.id === routeInfo.route.id) {
+        return;
+      }
+      this.routeInfo = routeInfo;
+      if (this.nextRouteInfo !== undefined) {
+        this.actionType = undefined;
+        this.nextRouteInfo = undefined;
+        this.nextActionType = undefined;
+      } else {
+        this.actionType = type;
+      }
+
+      this.$forceUpdate();
+    },
+    handleRouteWillChange(type: RouteActionType, routeInfo?: IRouteInfo) {
+      if (routeInfo === undefined) {
+        return;
+      }
+      this.nextRouteInfo = routeInfo;
+      this.nextActionType = type;
+      this.$forceUpdate();
+    },
+    handleRouteChangeCancel(routeInfo: IRouteInfo) {
+      if (
+        routeInfo === undefined ||
+        this.nextRouteInfo === undefined ||
+        (routeInfo && this.nextRouteInfo && routeInfo.route.id !== this.nextRouteInfo.route.id)
+      ) {
+        return;
+      }
+      this.nextRouteInfo = undefined;
+      this.nextActionType = undefined;
+      this.actionType = undefined;
+
       this.$forceUpdate();
     },
     handleRouteDestroy(ids: string[]) {
@@ -96,6 +143,9 @@ export default Vue.extend({
     },
     getTransitionProps(): Partial<ITransitionOptions> {
       const props: Partial<ITransitionOptions> = {};
+      if (this.actionType === undefined) {
+        return props;
+      }
       if (this.transition) {
         if (typeof this.transition === 'string') {
           props.name = `${this.transition}-${this.actionType}`;
@@ -117,17 +167,16 @@ export default Vue.extend({
         afterLeave: this.handleTransitionAfterLeave
       };
     },
-    getPageViewProps(): IPageViewProps {
+    getPageViewProps(routeInfo: IRouteInfo): IPageViewProps {
       const props: IPageViewProps = {
         path: '/',
         params: {},
         query: {},
         state: undefined
       };
-      if (this.route) {
-        const { path, params, query, state } = this.route;
-        Object.assign(props, { params, query, state, path });
-      }
+      const { path, params, query, state } = routeInfo.route;
+      Object.assign(props, { params, query, state, path });
+
       return props;
     },
     handleTransitionBeforeEnter() {
