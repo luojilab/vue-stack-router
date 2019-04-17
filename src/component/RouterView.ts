@@ -1,6 +1,6 @@
 import Vue, { CreateElement, VNode } from 'vue';
 import { RouteActionType, RouteEventType } from '../interface/common';
-import { IRoute, IRouteInfo, IRouter } from '../interface/router';
+import { IRouteInfo, IRouter, IRouterConfig } from '../interface/router';
 
 interface IData {
   routeInfo?: IRouteInfo;
@@ -8,6 +8,7 @@ interface IData {
   vnodeCache: Map<string, VNode>;
   actionType?: RouteActionType;
   nextActionType?: RouteActionType;
+  routerConfig: IRouterConfig;
 }
 interface ITransitionDurationConfig {
   enter: number;
@@ -40,31 +41,32 @@ export default Vue.extend({
       return h();
     }
     const vnode = this.renderRoute(h, this.routeInfo);
-    if (this.nextRouteInfo) {
+    if (this.nextRouteInfo && this.routerConfig.supportPreAction) {
       const nextVNode = this.renderRoute(h, this.nextRouteInfo);
       const children = this.nextActionType === RouteActionType.POP ? [nextVNode, vnode] : [vnode, nextVNode];
       // TODO Vue does not support fragment, wrap them with a div
       return h('div', {}, children);
     }
     if (this.transition) {
-      const vnodeData = {
-        props: this.getTransitionProps(),
-        on: this.getTransitionListener()
-      };
-      return h('div', {}, [h('transition', vnodeData, [vnode])]);
+      const transitionVNode = this.renderTransition(h, vnode);
+      return this.renderWrapper(h, transitionVNode);
     }
 
-    return h('div', {}, [vnode]);
+    return this.renderWrapper(h, vnode);
   },
   created() {
     this.vnodeCache = new Map();
     this.actionType = RouteActionType.NONE;
     const router = this.getRouter();
+    this.routerConfig = router.routerConfig;
     this.routeInfo = router.currentRouteInfo;
     router.on(RouteEventType.CHANGE, this.handleRouteChange);
-    router.on(RouteEventType.WILL_CHANGE, this.handleRouteWillChange);
-    router.on(RouteEventType.CANCEL_CHANGE, this.handleRouteChangeCancel);
     router.on(RouteEventType.DESTROY, this.handleRouteDestroy);
+
+    if (this.routerConfig.supportPreAction) {
+      router.on(RouteEventType.WILL_CHANGE, this.handleRouteWillChange);
+      router.on(RouteEventType.CANCEL_CHANGE, this.handleRouteChangeCancel);
+    }
   },
   destroyed() {
     const router = this.getRouter();
@@ -85,8 +87,21 @@ export default Vue.extend({
         vnode.componentInstance = cachedVNode.componentInstance;
       }
       this.vnodeCache.set(route.id, vnode);
-      // vnode.data!.keepAlive = true;
+      vnode.data!.keepAlive = true;
 
+      return vnode;
+    },
+    renderTransition(h: CreateElement, vnode: VNode): VNode {
+      const vnodeData = {
+        props: this.getTransitionProps(),
+        on: this.getTransitionListener()
+      };
+      return h('transition', vnodeData, [vnode]);
+    },
+    renderWrapper(h: CreateElement, vnode: VNode): VNode {
+      if (this.routerConfig.supportPreAction) {
+        return h('div', {}, [vnode]);
+      }
       return vnode;
     },
     getRouter() {

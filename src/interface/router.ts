@@ -3,9 +3,11 @@ import { IEventEmitter, IQuery, RouteActionType, RouteEventType } from './common
 
 export interface IRouterOption {
   routes: IRouteConfig[];
-  config?: unknown; // todo
+  config?: IRouterConfig;
 }
-
+export interface IRouterConfig {
+  supportPreAction: boolean;
+}
 export interface IRouteConfig {
   name?: string;
   path: string;
@@ -37,6 +39,7 @@ export interface IRouterEvent {
 export type preActionCallback = (cancel: boolean) => void;
 export interface IRouter extends IEventEmitter<IRouterEvent> {
   readonly currentRouteInfo: IRouteInfo | undefined;
+  readonly routerConfig: IRouterConfig;
   push(pathname: string, options?: Partial<INavigateOption>): void;
   prepush(pathname: string, options?: Partial<INavigateOption>): preActionCallback;
   pop(): void;

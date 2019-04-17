@@ -5,6 +5,7 @@ import {
   IRouteConfig,
   IRouteInfo,
   IRouter,
+  IRouterConfig,
   IRouterEvent,
   IRouterOption,
   preActionCallback
@@ -23,11 +24,18 @@ export default class Router extends EventEmitter<IRouterEvent> implements IRoute
     }
     return Object.assign(routeAndConfig, { index: this.routeStack.length - 1 });
   }
+  public get routerConfig(): IRouterConfig {
+    return this.config;
+  }
   private routeStack: IRouteAndConfig[] = [];
   private driver: IRouterDriver;
-  constructor(options: IRouterOption, driver: IRouterDriver) {
+  private config: IRouterConfig = {
+    supportPreAction: false
+  };
+  constructor(option: IRouterOption, driver: IRouterDriver) {
     super();
-    options.routes.forEach(option => this.routes.set(option.path, option));
+    option.routes.forEach(route => this.routes.set(route.path, route));
+    Object.assign(this.config, option.config);
     this.driver = driver;
     this.initDriverListener();
     this.driver.receiverReady();
