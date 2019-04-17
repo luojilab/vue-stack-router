@@ -34,3 +34,5 @@ export enum RouteEventType {
   CHANGE = 'change',
   DESTROY = 'destroy'
 }
+
+export type Omit<T, K> = Pick<T, Exclude<keyof T, K>>;

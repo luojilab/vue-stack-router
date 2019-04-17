@@ -1,8 +1,7 @@
-import { IRouteRecord, RouteActionType, RouteEventType } from '../interface/common';
+import { IRouteRecord, Omit, RouteActionType, RouteEventType } from '../interface/common';
 import { IRouterDriver, RouteDriverEventType } from '../interface/driver';
 import {
   INavigateOption,
-  IRoute,
   IRouteConfig,
   IRouteInfo,
   IRouter,
@@ -13,12 +12,18 @@ import {
 import { getPathnameAndQuery } from '../utils/helpers';
 import EventEmitter from './EventEmitter';
 
+type IRouteAndConfig = Omit<IRouteInfo, 'index'>;
+
 export default class Router extends EventEmitter<IRouterEvent> implements IRouter {
   public routes: Map<string, IRouteConfig> = new Map();
   public get currentRouteInfo(): IRouteInfo | undefined {
-    return this.routeStack[this.routeStack.length - 1];
+    const routeAndConfig = this.routeStack[this.routeStack.length - 1];
+    if (!routeAndConfig) {
+      return;
+    }
+    return Object.assign(routeAndConfig, { index: this.routeStack.length - 1 });
   }
-  private routeStack: IRouteInfo[] = [];
+  private routeStack: IRouteAndConfig[] = [];
   private driver: IRouterDriver;
   constructor(options: IRouterOption, driver: IRouterDriver) {
     super();
@@ -33,10 +38,12 @@ export default class Router extends EventEmitter<IRouterEvent> implements IRoute
   }
 
   public prepop(): preActionCallback {
-    if (this.routeStack.length <= 1) {
+    const index = this.routeStack.length - 2;
+
+    if (index < 0) {
       return (cancel: boolean) => undefined;
     }
-    const nextRouteInfo = this.routeStack[this.routeStack.length - 2];
+    const nextRouteInfo = Object.assign(this.routeStack[index], { index });
     this.emit(RouteEventType.WILL_CHANGE, RouteActionType.POP, nextRouteInfo);
     return (cancel: boolean) => {
       if (cancel) {
@@ -93,7 +100,7 @@ export default class Router extends EventEmitter<IRouterEvent> implements IRoute
     };
   }
 
-  private getRouteInfo(id: string, path: string, state: unknown): IRouteInfo | undefined {
+  private getRouteInfo(id: string, path: string, state: unknown): IRouteAndConfig | undefined {
     const matchedRoute = this.matchRoute(path);
     if (matchedRoute === undefined) {
       return;
@@ -112,8 +119,8 @@ export default class Router extends EventEmitter<IRouterEvent> implements IRoute
     };
   }
 
-  private componentChange(type: RouteActionType, routeInfo: IRouteInfo): void {
-    this.emit(RouteEventType.CHANGE, type, routeInfo);
+  private componentChange(type: RouteActionType): void {
+    this.emit(RouteEventType.CHANGE, type, this.currentRouteInfo);
   }
 
   private initDriverListener() {
@@ -127,9 +134,9 @@ export default class Router extends EventEmitter<IRouterEvent> implements IRoute
       return;
     }
     this.updateRouteRecords(type, routeInfo);
-    this.componentChange(type, routeInfo);
+    this.componentChange(type);
   }
-  private updateRouteRecords(type: RouteActionType, routeInfo: IRouteInfo): void {
+  private updateRouteRecords(type: RouteActionType, routeInfo: IRouteAndConfig): void {
     switch (type) {
       case RouteActionType.PUSH:
         this.routeStack.push(routeInfo);

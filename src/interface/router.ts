@@ -46,6 +46,7 @@ export interface IRouter extends IEventEmitter<IRouterEvent> {
 }
 
 export interface IRouteInfo {
+  index: number;
   route: IRoute;
   config: IRouteConfig;
 }
