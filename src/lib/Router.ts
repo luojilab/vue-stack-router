@@ -30,7 +30,7 @@ export default class Router extends EventEmitter<IRouterEvent> implements IRoute
   private routeStack: IRouteAndConfig[] = [];
   private driver: IRouterDriver;
   private config: IRouterConfig = {
-    supportPreAction: false
+    supportPreRender: false
   };
   constructor(option: IRouterOption, driver: IRouterDriver) {
     super();

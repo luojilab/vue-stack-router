@@ -8,7 +8,7 @@ interface IData {
   vnodeCache: Map<string, VNode>;
   actionType?: RouteActionType;
   nextActionType?: RouteActionType;
-  routerConfig: IRouterConfig;
+  supportPreRender: boolean;
 }
 interface ITransitionDurationConfig {
   enter: number;
@@ -18,6 +18,7 @@ interface ITransitionOptions {
   name: string;
   duration: number | ITransitionDurationConfig;
   mode: string;
+  tag: string;
 }
 type PropsTypes<T> = () => T;
 interface IPageViewProps {
@@ -41,15 +42,13 @@ export default Vue.extend({
       return h();
     }
     const vnode = this.renderRoute(h, this.routeInfo);
-    if (this.nextRouteInfo && this.routerConfig.supportPreAction) {
+    if (this.nextRouteInfo && this.supportPreRender) {
       const nextVNode = this.renderRoute(h, this.nextRouteInfo);
       const children = this.nextActionType === RouteActionType.POP ? [nextVNode, vnode] : [vnode, nextVNode];
-      // TODO Vue does not support fragment, wrap them with a div
       return h('div', {}, children);
     }
     if (this.transition) {
-      const transitionVNode = this.renderTransition(h, vnode);
-      return this.renderWrapper(h, transitionVNode);
+      return this.renderTransition(h, vnode);
     }
 
     return this.renderWrapper(h, vnode);
@@ -58,12 +57,12 @@ export default Vue.extend({
     this.vnodeCache = new Map();
     this.actionType = RouteActionType.NONE;
     const router = this.getRouter();
-    this.routerConfig = router.routerConfig;
+    this.supportPreRender = router.routerConfig.supportPreRender;
     this.routeInfo = router.currentRouteInfo;
     router.on(RouteEventType.CHANGE, this.handleRouteChange);
     router.on(RouteEventType.DESTROY, this.handleRouteDestroy);
 
-    if (this.routerConfig.supportPreAction) {
+    if (this.supportPreRender) {
       router.on(RouteEventType.WILL_CHANGE, this.handleRouteWillChange);
       router.on(RouteEventType.CANCEL_CHANGE, this.handleRouteChangeCancel);
     }
@@ -96,13 +95,12 @@ export default Vue.extend({
         props: this.getTransitionProps(),
         on: this.getTransitionListener()
       };
-      return h('transition', vnodeData, [vnode]);
+      vnode.key = this.routeInfo && this.routeInfo.route.id;
+      const transitionVnode = h(this.supportPreRender ? 'transition-group' : 'transition', vnodeData, [vnode]);
+      return transitionVnode;
     },
     renderWrapper(h: CreateElement, vnode: VNode): VNode {
-      if (this.routerConfig.supportPreAction) {
-        return h('div', {}, [vnode]);
-      }
-      return vnode;
+      return h('div', {}, [vnode]);
     },
     getRouter() {
       return this.router || this.$router;
@@ -157,7 +155,9 @@ export default Vue.extend({
       });
     },
     getTransitionProps(): Partial<ITransitionOptions> {
-      const props: Partial<ITransitionOptions> = {};
+      const props: Partial<ITransitionOptions> = {
+        tag: 'div'
+      };
       if (this.actionType === undefined) {
         return props;
       }

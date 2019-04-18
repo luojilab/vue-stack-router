@@ -6,7 +6,7 @@ export interface IRouterOption {
   config?: IRouterConfig;
 }
 export interface IRouterConfig {
-  supportPreAction: boolean;
+  supportPreRender: boolean;
 }
 export interface IRouteConfig {
   name?: string;
