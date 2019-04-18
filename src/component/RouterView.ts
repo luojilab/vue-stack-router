@@ -7,7 +7,7 @@ interface IData {
   nextRouteInfo?: IRouteInfo;
   vnodeCache: Map<string, VNode>;
   actionType?: RouteActionType;
-  nextActionType?: RouteActionType;
+  transitionType?: RouteActionType;
   supportPreRender: boolean;
 }
 interface ITransitionDurationConfig {
@@ -44,7 +44,7 @@ export default Vue.extend({
     const vnode = this.renderRoute(h, this.routeInfo);
     if (this.nextRouteInfo && this.supportPreRender) {
       const nextVNode = this.renderRoute(h, this.nextRouteInfo);
-      const children = this.nextActionType === RouteActionType.POP ? [nextVNode, vnode] : [vnode, nextVNode];
+      const children = this.transitionType === RouteActionType.POP ? [nextVNode, vnode] : [vnode, nextVNode];
       return h('div', {}, children);
     }
     if (this.transition) {
@@ -116,7 +116,7 @@ export default Vue.extend({
       if (this.nextRouteInfo !== undefined) {
         this.actionType = undefined;
         this.nextRouteInfo = undefined;
-        this.nextActionType = undefined;
+        this.transitionType = undefined;
       } else {
         this.actionType = type;
       }
@@ -128,7 +128,7 @@ export default Vue.extend({
         return;
       }
       this.nextRouteInfo = routeInfo;
-      this.nextActionType = type;
+      this.transitionType = type;
       this.$forceUpdate();
     },
     handleRouteChangeCancel(routeInfo: IRouteInfo) {
@@ -140,7 +140,7 @@ export default Vue.extend({
         return;
       }
       this.nextRouteInfo = undefined;
-      this.nextActionType = undefined;
+      this.transitionType = undefined;
       this.actionType = undefined;
 
       this.$forceUpdate();
