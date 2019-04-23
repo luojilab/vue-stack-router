@@ -6,7 +6,7 @@
   "module": "dist/vue-stack-router.esm.js",
   "scripts": {
     "build": "rollup -c build/esm.rollup.config.js && rollup -c build/commonjs.rollup.config.js ",
-    "test": "mocha --require ./test/register test/**/*.test.ts",
+    "test": "nyc mocha --require ./test/register test/**/*.test.ts",
     "preversion": "npm run build",
     "postversion": "git push && git push --tags"
   },
@@ -17,6 +17,7 @@
     "@types/mocha": "^5.2.5",
     "chai": "^4.2.0",
     "mocha": "^5.2.0",
+    "nyc": "^14.0.0",
     "rollup": "^1.2.1",
     "rollup-plugin-typescript": "^1.0.0",
     "ts-node": "^8.0.1",
@@ -28,5 +29,19 @@
   },
   "peerDependencies": {
     "vue": "^2.5.21"
+  },
+  "nyc": {
+    "extension": [
+      ".ts",
+      ".tsx"
+    ],
+    "include":["src"],
+    "exclude": [
+      "**/*.d.ts"
+    ],
+    "reporter": [
+      "html"
+    ],
+    "all": true  
   }
 }
