@@ -35,7 +35,7 @@ export type IPathnameLocation = {
 export function isPathnameLocation(location: any): location is IPathnameLocation {
   return location.pathname !== undefined;
 }
-export type ILocation = string | INameLocation | IPathnameLocation;
+export type ILocation = INameLocation | IPathnameLocation;
 export interface IRoute {
   id: string;
   name: string;
@@ -54,12 +54,12 @@ export interface IRouterEventMap {
 export type preActionCallback = (cancel: boolean) => void;
 export interface IRouter extends IEventEmitter<IRouterEventMap> {
   readonly currentRouteInfo: IRouteInfo | undefined;
-  push(location: ILocation): void;
-  prepush(location: ILocation): preActionCallback;
+  push(location: string | ILocation): void;
+  prepush(location: string | ILocation): preActionCallback;
   pop(): void;
   prepop(): preActionCallback;
-  replace(location: ILocation): void;
-  prereplace(location: ILocation): preActionCallback;
+  replace(location: string | ILocation): void;
+  prereplace(location: string | ILocation): preActionCallback;
 }
 
 export interface IRouteInfo {

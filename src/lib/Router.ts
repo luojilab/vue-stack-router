@@ -3,7 +3,6 @@ import { IRouterDriver, RouteDriverEventType } from '../interface/driver';
 import { IRouteManager } from '../interface/routeManager';
 import {
   ILocation,
-  INavigateOption,
   IRouteInfo,
   IRouter,
   IRouterConfig,
@@ -18,7 +17,14 @@ import EventEmitter from './EventEmitter';
 import RouteManager from './RouteManager';
 
 type IRouteAndConfig = Omit<IRouteInfo, 'index'>;
-
+/**
+ * Router
+ *
+ * @export
+ * @class Router
+ * @extends {EventEmitter<IRouterEventMap>}
+ * @implements {IRouter}
+ */
 export default class Router extends EventEmitter<IRouterEventMap> implements IRouter {
   public get currentRouteInfo(): IRouteInfo | undefined {
     const routeAndConfig = this.routeStack[this.routeStack.length - 1];
@@ -26,9 +32,6 @@ export default class Router extends EventEmitter<IRouterEventMap> implements IRo
       return;
     }
     return Object.assign(routeAndConfig, { index: this.routeStack.length - 1 });
-  }
-  public get routerConfig(): IRouterConfig {
-    return this.config;
   }
   private routeManager: IRouteManager;
   private routeStack: IRouteAndConfig[] = [];
@@ -46,7 +49,7 @@ export default class Router extends EventEmitter<IRouterEventMap> implements IRo
     this.initDriverListener();
   }
 
-  public prepush(location: ILocation): preActionCallback {
+  public prepush(location: string | ILocation): preActionCallback {
     throw new Error('Method not implemented.');
   }
 
@@ -67,20 +70,36 @@ export default class Router extends EventEmitter<IRouterEventMap> implements IRo
     };
   }
 
-  public prereplace(location: ILocation): preActionCallback {
+  public prereplace(location: string | ILocation): preActionCallback {
     throw new Error('Method not implemented.');
   }
 
-  public push(location: ILocation): void {
+  /**
+   * Push a new page into the stack
+   *
+   * @param {string | ILocation} location
+   * @memberof Router
+   */
+  public push(location: string | ILocation): void {
     const { path, state } = this.getPathAndState(location);
     this.driver.push(path, state);
   }
 
+  /**
+   * Pop the page on the top of stack
+   *
+   * @memberof Router
+   */
   public pop(): void {
     this.driver.pop();
   }
 
-  public replace(location: ILocation): void {
+  /**
+   * Pop the current page
+   *
+   * @memberof Router
+   */
+  public replace(location: string | ILocation): void {
     const { path, state } = this.getPathAndState(location);
     this.driver.replace(path, state);
   }
@@ -96,7 +115,7 @@ export default class Router extends EventEmitter<IRouterEventMap> implements IRo
     option.routes.forEach(route => this.routeManager.register(route));
   }
 
-  private getPathAndState(location: ILocation) {
+  private getPathAndState(location: string | ILocation) {
     if (typeof location === 'string') {
       return {
         path: location,
