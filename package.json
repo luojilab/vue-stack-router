@@ -8,7 +8,8 @@
     "build": "rollup -c build/esm.rollup.config.js && rollup -c build/commonjs.rollup.config.js ",
     "test": "nyc mocha --require ./test/register test/**/*.test.ts",
     "preversion": "npm run build",
-    "postversion": "git push && git push --tags"
+    "postversion": "git push && git push --tags",
+    "doc":"typedoc --out doc/ src/lib/Router.ts --theme markdown"
   },
   "author": "jiangq.leaves@gmail.com",
   "license": "MIT",
@@ -24,6 +25,8 @@
     "tslib": "^1.9.3",
     "tslint": "^5.12.0",
     "tslint-config-airbnb-base": "^0.2.0",
+    "typedoc": "^0.14.2",
+    "typedoc-plugin-markdown": "^1.2.0",
     "typescript": "^3.3.3",
     "vue": "^2.6.6"
   },
@@ -35,13 +38,15 @@
       ".ts",
       ".tsx"
     ],
-    "include":["src"],
+    "include": [
+      "src"
+    ],
     "exclude": [
       "**/*.d.ts"
     ],
     "reporter": [
       "html"
     ],
-    "all": true  
+    "all": true
   }
 }
