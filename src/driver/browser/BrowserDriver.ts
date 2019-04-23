@@ -1,5 +1,5 @@
 import { IRouteRecord, RouteActionType } from '../../interface/common';
-import { IDriverEvent, IRouterDriver, RouteDriverEventType } from '../../interface/driver';
+import { IDriverEventMap, IRouterDriver, RouteDriverEventType } from '../../interface/driver';
 import EventEmitter from '../../lib/EventEmitter';
 import idMarker from './idMarker';
 interface IHistoryRouteState {
@@ -16,19 +16,17 @@ export interface IWebDriverOptions {
   mode: Mode;
 }
 
-export default class BrowserDriver extends EventEmitter<IDriverEvent> implements IRouterDriver {
+export default class BrowserDriver extends EventEmitter<IDriverEventMap> implements IRouterDriver {
   private currentId: number = 0;
+  private initial: boolean = false;
+  private documentLoaded = false;
   private mode = Mode.hash;
   constructor(options?: IWebDriverOptions) {
     super();
     if (options) {
       this.mode = options.mode;
     }
-  }
-
-  public receiverReady() {
-    this.initRouter();
-    this.initListener();
+    this.handleDocumentLoaded();
   }
 
   public push(path: string, state?: unknown): void {
@@ -47,6 +45,31 @@ export default class BrowserDriver extends EventEmitter<IDriverEvent> implements
     this.handleRouteChange(RouteActionType.REPLACE, id, path, state);
   }
 
+  public on<K extends keyof IDriverEventMap>(type: K, listener: IDriverEventMap[K]): void {
+    super.on(type, listener);
+    if (!this.initial) {
+      this.init();
+      this.initial = true;
+    }
+  }
+
+  private handleDocumentLoaded() {
+    if (document.readyState === 'complete') {
+      this.documentLoaded = true;
+    } else {
+      window.addEventListener('load', () => {
+        setTimeout(() => {
+          this.documentLoaded = true;
+        }, 0);
+      });
+    }
+  }
+
+  private init() {
+    this.initRouter();
+    this.initListener();
+  }
+
   private handleRouteChange(type: RouteActionType, id: number, path: string, state: unknown) {
     this.currentId = id;
     const route: IRouteRecord = { id: String(id), path, state, type };
@@ -61,20 +84,27 @@ export default class BrowserDriver extends EventEmitter<IDriverEvent> implements
    */
   private initListener() {
     window.addEventListener('popstate', e => {
-      const historyState = e.state as IHistoryRouteState | null;
-      const routeState = historyState && historyState.__routeState;
-      if (routeState) {
-        const { id, state } = routeState;
-        const path = this.getCurrentPath();
-        const type = id > this.currentId ? RouteActionType.PUSH : RouteActionType.POP;
-        this.handleRouteChange(type, id, path, state);
-      } else {
-        const path = this.getCurrentPath();
-        const id = idMarker();
-        window.history.replaceState({ __routeState: { id } } as IHistoryRouteState, '', this.getUrl(path));
-        this.handleRouteChange(RouteActionType.PUSH, id, path, undefined);
+      // Old safari will emit a 'popstate' event on page load
+      if (!this.documentLoaded) {
+        return;
       }
+      this.handlePopstate(e);
     });
+  }
+  private handlePopstate(e: PopStateEvent) {
+    const historyState = e.state as IHistoryRouteState | null;
+    const routeState = historyState && historyState.__routeState;
+    if (routeState) {
+      const { id, state } = routeState;
+      const path = this.getCurrentPath();
+      const type = id > this.currentId ? RouteActionType.PUSH : RouteActionType.POP;
+      this.handleRouteChange(type, id, path, state);
+    } else {
+      const path = this.getCurrentPath();
+      const id = idMarker();
+      window.history.replaceState({ __routeState: { id } } as IHistoryRouteState, '', this.getUrl(path));
+      this.handleRouteChange(RouteActionType.PUSH, id, path, undefined);
+    }
   }
 
   private initRouter() {
