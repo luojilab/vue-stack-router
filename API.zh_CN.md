@@ -36,7 +36,13 @@ const routes = [
   {
     name: "detail",
     path: "/detail/:id",
-    component: Detail
+    component: Detail,
+    meta: { title: "detail" }
+  },
+  {
+    name: "home",
+    path: "*",
+    component: Home
   }
 ];
 const driver = new BrowserDriver({ mode: "hash" });
