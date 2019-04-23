@@ -1,6 +1,6 @@
 import Vue, { CreateElement, VNode } from 'vue';
-import { RouteActionType, RouteEventType } from '../interface/common';
-import { IRouteInfo, IRouter, IRouterConfig } from '../interface/router';
+import { IEventEmitter, RouteActionType, RouteEventType } from '../interface/common';
+import { IRouteInfo, IRouterEventMap } from '../interface/router';
 
 interface IData {
   routeInfo?: IRouteInfo;
@@ -34,8 +34,9 @@ export default Vue.extend({
     return {} as IData;
   },
   props: {
-    router: Object as PropsTypes<IRouter | undefined>,
-    transition: ([Object, String] as unknown) as PropsTypes<ITransitionOptions | string | undefined>
+    router: Object as PropsTypes<IEventEmitter<IRouterEventMap> | undefined>,
+    transition: ([Object, String] as unknown) as PropsTypes<ITransitionOptions | string | undefined>,
+    supportPreRender: Boolean as PropsTypes<boolean>
   },
   render(h: CreateElement): VNode {
     if (!this.routeInfo) {
@@ -56,23 +57,21 @@ export default Vue.extend({
   created() {
     this.vnodeCache = new Map();
     this.actionType = RouteActionType.NONE;
-    const router = this.getRouter();
-    this.supportPreRender = router.routerConfig.supportPreRender;
-    this.routeInfo = router.currentRouteInfo;
-    router.on(RouteEventType.CHANGE, this.handleRouteChange);
-    router.on(RouteEventType.DESTROY, this.handleRouteDestroy);
+    const event = this.getEventEmitter();
+    event.on(RouteEventType.CHANGE, this.handleRouteChange);
+    event.on(RouteEventType.DESTROY, this.handleRouteDestroy);
 
     if (this.supportPreRender) {
-      router.on(RouteEventType.WILL_CHANGE, this.handleRouteWillChange);
-      router.on(RouteEventType.CANCEL_CHANGE, this.handleRouteChangeCancel);
+      event.on(RouteEventType.WILL_CHANGE, this.handleRouteWillChange);
+      event.on(RouteEventType.CANCEL_CHANGE, this.handleRouteChangeCancel);
     }
   },
   destroyed() {
-    const router = this.getRouter();
-    router.off(RouteEventType.CHANGE, this.handleRouteChange);
-    router.off(RouteEventType.WILL_CHANGE, this.handleRouteWillChange);
-    router.off(RouteEventType.CANCEL_CHANGE, this.handleRouteChangeCancel);
-    router.off(RouteEventType.DESTROY, this.handleRouteDestroy);
+    const event = this.getEventEmitter();
+    event.off(RouteEventType.CHANGE, this.handleRouteChange);
+    event.off(RouteEventType.WILL_CHANGE, this.handleRouteWillChange);
+    event.off(RouteEventType.CANCEL_CHANGE, this.handleRouteChangeCancel);
+    event.off(RouteEventType.DESTROY, this.handleRouteDestroy);
   },
   methods: {
     renderRoute(h: CreateElement, routeInfo: IRouteInfo): VNode {
@@ -102,7 +101,7 @@ export default Vue.extend({
     renderWrapper(h: CreateElement, vnode: VNode): VNode {
       return h('div', {}, [vnode]);
     },
-    getRouter() {
+    getEventEmitter(): IEventEmitter<IRouterEventMap> {
       return this.router || this.$router;
     },
     handleRouteChange(type: RouteActionType, routeInfo?: IRouteInfo) {
