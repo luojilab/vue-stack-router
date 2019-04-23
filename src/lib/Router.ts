@@ -1,22 +1,25 @@
 import { IRouteRecord, Omit, RouteActionType, RouteEventType } from '../interface/common';
 import { IRouterDriver, RouteDriverEventType } from '../interface/driver';
+import { IRouteManager } from '../interface/routeManager';
 import {
+  ILocation,
   INavigateOption,
-  IRouteConfig,
   IRouteInfo,
   IRouter,
   IRouterConfig,
-  IRouterEvent,
+  IRouterEventMap,
   IRouterOption,
+  isNameLocation,
+  isPathnameLocation,
   preActionCallback
 } from '../interface/router';
-import { getPathnameAndQuery } from '../utils/helpers';
+import { getPathnameAndQuery, parseToSearchStr } from '../utils/url';
 import EventEmitter from './EventEmitter';
+import RouteManager from './RouteManager';
 
 type IRouteAndConfig = Omit<IRouteInfo, 'index'>;
 
-export default class Router extends EventEmitter<IRouterEvent> implements IRouter {
-  public routes: Map<string, IRouteConfig> = new Map();
+export default class Router extends EventEmitter<IRouterEventMap> implements IRouter {
   public get currentRouteInfo(): IRouteInfo | undefined {
     const routeAndConfig = this.routeStack[this.routeStack.length - 1];
     if (!routeAndConfig) {
@@ -27,21 +30,23 @@ export default class Router extends EventEmitter<IRouterEvent> implements IRoute
   public get routerConfig(): IRouterConfig {
     return this.config;
   }
+  private routeManager: IRouteManager;
   private routeStack: IRouteAndConfig[] = [];
   private driver: IRouterDriver;
   private config: IRouterConfig = {
     supportPreRender: false
   };
-  constructor(option: IRouterOption, driver: IRouterDriver) {
+  constructor(option: IRouterOption, driver: IRouterDriver, routeManager: IRouteManager = new RouteManager()) {
     super();
-    option.routes.forEach(route => this.routes.set(route.path, route));
-    Object.assign(this.config, option.config);
+    this.routeManager = routeManager;
     this.driver = driver;
+    Object.assign(this.config, option.config);
+
+    this.initRoute(option);
     this.initDriverListener();
-    this.driver.receiverReady();
   }
 
-  public prepush(pathname: string, options?: Partial<INavigateOption>): preActionCallback {
+  public prepush(location: ILocation): preActionCallback {
     throw new Error('Method not implemented.');
   }
 
@@ -62,12 +67,12 @@ export default class Router extends EventEmitter<IRouterEvent> implements IRoute
     };
   }
 
-  public prereplace(pathname: string, options?: INavigateOption): preActionCallback {
+  public prereplace(location: ILocation): preActionCallback {
     throw new Error('Method not implemented.');
   }
 
-  public push(pathname: string, option?: Partial<INavigateOption>): void {
-    const { path, state } = this.getPathAndState(pathname, option);
+  public push(location: ILocation): void {
+    const { path, state } = this.getPathAndState(location);
     this.driver.push(path, state);
   }
 
@@ -75,36 +80,57 @@ export default class Router extends EventEmitter<IRouterEvent> implements IRoute
     this.driver.pop();
   }
 
-  public replace(pathname: string, option?: Partial<INavigateOption>): void {
-    const { path, state } = this.getPathAndState(pathname, option);
+  public replace(location: ILocation): void {
+    const { path, state } = this.getPathAndState(location);
     this.driver.replace(path, state);
   }
 
-  private getPathAndState(path: string, option?: Partial<INavigateOption>) {
-    const { pathname, query } = getPathnameAndQuery(path);
-    const mergedQuery = Object.assign(query, option && option.query);
-    const search = new URLSearchParams();
-    Object.keys(mergedQuery).forEach(k => {
-      search.append(k, mergedQuery[k]);
-    });
-    const queryStr = search.toString();
+  public on<K extends keyof IRouterEventMap>(type: K, listener: IRouterEventMap[K]): void {
+    super.on(type, listener);
+    if (type === RouteEventType.CHANGE) {
+      this.componentChange(RouteActionType.NONE);
+    }
+  }
+
+  private initRoute(option: IRouterOption) {
+    option.routes.forEach(route => this.routeManager.register(route));
+  }
+
+  private getPathAndState(location: ILocation) {
+    if (typeof location === 'string') {
+      return {
+        path: location,
+        state: undefined
+      };
+    }
+    let pathname = '';
+    if (isPathnameLocation(location)) {
+      pathname = location.pathname;
+    }
+    if (isNameLocation(location)) {
+      pathname = this.routeManager.getPathnameByRouteName(location.name, location.params) || '';
+    }
+    let queryStr = '';
+    if (location.query) {
+      queryStr = parseToSearchStr(location.query);
+    }
+
     return {
-      path: queryStr ? `${pathname}?${queryStr}` : pathname,
-      state: option && option.state
+      path: `${pathname}${queryStr}`,
+      state: location.state
     };
   }
 
   private matchRoute(path: string) {
-    // TODO url match
     const { pathname, query } = getPathnameAndQuery(path);
-    const routeConfig = this.routes.get(pathname);
-    if (routeConfig === undefined) {
+    const matchedRoute = this.routeManager.match(pathname);
+    if (matchedRoute === undefined) {
       return undefined;
     }
     return {
-      routeConfig,
+      routeConfig: matchedRoute.config,
       query,
-      params: {}
+      params: matchedRoute.params
     };
   }
 

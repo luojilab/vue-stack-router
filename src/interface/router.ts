@@ -6,7 +6,7 @@ export interface IRouterOption {
   config?: IRouterConfig;
 }
 export interface IRouterConfig {
-  supportPreRender: boolean;
+  readonly supportPreRender: boolean;
 }
 export interface IRouteConfig {
   name?: string;
@@ -20,7 +20,22 @@ export interface INavigateOption {
   params: { [key: string]: unknown };
   state: unknown;
 }
+export type INameLocation = {
+  name: string;
+} & Partial<INavigateOption>;
 
+export function isNameLocation(location: any): location is INameLocation {
+  return location.name !== undefined;
+}
+
+export type IPathnameLocation = {
+  pathname: string;
+} & Partial<INavigateOption>;
+
+export function isPathnameLocation(location: any): location is IPathnameLocation {
+  return location.pathname !== undefined;
+}
+export type ILocation = string | INameLocation | IPathnameLocation;
 export interface IRoute {
   id: string;
   name: string;
@@ -30,22 +45,21 @@ export interface IRoute {
   state?: unknown;
 }
 
-export interface IRouterEvent {
+export interface IRouterEventMap {
   [RouteEventType.CHANGE]: (type: RouteActionType, route?: IRouteInfo) => void;
   [RouteEventType.WILL_CHANGE]: (type: RouteActionType, route?: IRouteInfo) => void;
   [RouteEventType.CANCEL_CHANGE]: (routeInfo: IRouteInfo) => void;
   [RouteEventType.DESTROY]: (ids: string[]) => void;
 }
 export type preActionCallback = (cancel: boolean) => void;
-export interface IRouter extends IEventEmitter<IRouterEvent> {
+export interface IRouter extends IEventEmitter<IRouterEventMap> {
   readonly currentRouteInfo: IRouteInfo | undefined;
-  readonly routerConfig: IRouterConfig;
-  push(pathname: string, options?: Partial<INavigateOption>): void;
-  prepush(pathname: string, options?: Partial<INavigateOption>): preActionCallback;
+  push(location: ILocation): void;
+  prepush(location: ILocation): preActionCallback;
   pop(): void;
   prepop(): preActionCallback;
-  replace(pathname: string, options?: INavigateOption): void;
-  prereplace(pathname: string, options?: INavigateOption): preActionCallback;
+  replace(location: ILocation): void;
+  prereplace(location: ILocation): preActionCallback;
 }
 
 export interface IRouteInfo {
