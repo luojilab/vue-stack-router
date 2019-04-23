@@ -44,11 +44,13 @@ export default Vue.extend({
     }
     const vnode = this.renderRoute(h, this.routeInfo);
     let vNodes = [vnode];
+    let disableTransition = false;
     if (this.nextRouteInfo && this.supportPreRender) {
       const nextVNode = this.renderRoute(h, this.nextRouteInfo);
       vNodes = this.transitionType === RouteActionType.POP ? [nextVNode, vnode] : [vnode, nextVNode];
+      disableTransition = true;
     }
-    return this.transition ? this.renderTransition(h, vNodes) : this.renderWrapper(h, vNodes);
+    return this.transition ? this.renderTransition(h, vNodes, disableTransition) : this.renderWrapper(h, vNodes);
   },
   created() {
     this.vnodeCache = new Map();
@@ -85,12 +87,16 @@ export default Vue.extend({
       vnode.key = `__route-${routeInfo.index}`;
       return vnode;
     },
-    renderTransition(h: CreateElement, vNodes: VNode[]): VNode {
+    renderTransition(h: CreateElement, vNodes: VNode[], disableTransition?: boolean): VNode {
       const vnodeData = {
         props: this.getTransitionProps(),
         on: this.getTransitionListener()
       };
-      const transitionVnode = h(this.supportPreRender ? 'transition-group' : 'transition', vnodeData, vNodes);
+      const transitionVnode = h(
+        this.supportPreRender ? 'transition-group' : 'transition',
+        disableTransition ? { props: { tag: 'div' } } : vnodeData,
+        vNodes
+      );
       return transitionVnode;
     },
     renderWrapper(h: CreateElement, vNodes: VNode[]): VNode {
