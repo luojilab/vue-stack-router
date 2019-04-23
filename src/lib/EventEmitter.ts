@@ -1,6 +1,6 @@
 import { IEventEmitter } from '../interface/common';
 
-export default class EventEmitter<T> implements IEventEmitter<T> {
+export default class EventEmitter<T = any> implements IEventEmitter<T> {
   private storage: Map<keyof T, Set<unknown>> = new Map();
 
   public on<K extends keyof T>(type: K, listener: T[K]): void {

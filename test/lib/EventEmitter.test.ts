@@ -10,7 +10,7 @@ describe('src/lib/EventEmitter.ts', () => {
   it('Paramter should be ok', done => {
     const event = new EventEmitter();
 
-    event.on('test', (a, b) => {
+    event.on('test', (a: string, b: string) => {
       expect(a).to.eq('a');
       expect(b).to.eq('b');
       done();
