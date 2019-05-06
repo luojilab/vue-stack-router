@@ -3,4 +3,6 @@ import BrowserDriver from './driver/browser/BrowserDriver';
 import installer from './lib/installer';
 import Router from './lib/Router';
 
-export { Router, BrowserDriver, RouterView, installer };
+import * as Types from './types';
+
+export { Router, BrowserDriver, RouterView, installer, Types };
