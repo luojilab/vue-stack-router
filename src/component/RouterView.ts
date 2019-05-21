@@ -28,6 +28,7 @@ interface ITransitionDurationConfig {
 }
 interface ITransitionOptions {
   name: string;
+  appear?: boolean;
   duration: number | ITransitionDurationConfig;
   mode: string;
   tag: string;
@@ -183,7 +184,8 @@ export default Vue.extend({
     },
     getTransitionProps(): Partial<ITransitionOptions> {
       const props: Partial<ITransitionOptions> = {
-        tag: 'div'
+        appear: true,
+        tag: 'div',
       };
       if (this.transitionType === RouteActionType.NONE) return props;
       const transition = this.customTransition === undefined ? this.transition : this.customTransition;
