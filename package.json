@@ -1,6 +1,6 @@
 {
   "name": "vue-stack-router",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "Vue stack router",
   "main": "dist/vue-stack-router.js",
   "module": "dist/vue-stack-router.esm.js",
