@@ -218,6 +218,7 @@ export default class Router extends EventEmitter<IRouterEventMap> implements IRo
           this.componentChange(type, transition);
           this.emit(RouteEventType.DESTROY, destroyedIds);
         }
+        break;
       default:
         this.componentChange(type, transition);
     }
