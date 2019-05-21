@@ -1,13 +1,13 @@
-import {  IEventEmitter, IRouteRecord } from './common';
+import { IEventEmitter, IRouteRecord } from './common';
 export enum RouteDriverEventType {
-  CHANGE = 'change',
+  CHANGE = 'change'
 }
 export interface IDriverEventMap {
   [RouteDriverEventType.CHANGE]: (routeRecord: IRouteRecord) => void;
 }
 
 export interface IRouterDriver extends IEventEmitter<IDriverEventMap> {
-  push(path: string, state?: unknown): void;
-  pop(): void;
-  replace(path: string, state?: unknown): void;
+  push(path: string, state?: unknown, payload?: unknown): void;
+  pop(payload?: unknown): void;
+  replace(path: string, state?: unknown, payload?: unknown): void;
 }

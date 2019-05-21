@@ -3,6 +3,9 @@ import { IRouterDriver, RouteDriverEventType } from '../interface/driver';
 import { IRouteManager } from '../interface/routeManager';
 import {
   ILocation,
+  INavigationOptions,
+  INavigationPayload,
+  IPopNavigationOptions,
   IRouteInfo,
   IRouter,
   IRouterConfig,
@@ -49,11 +52,11 @@ export default class Router extends EventEmitter<IRouterEventMap> implements IRo
     this.initDriverListener();
   }
 
-  public prepush(location: string | ILocation): preActionCallback {
+  public prepush<T extends INavigationOptions>(location: string | ILocation<T>): preActionCallback {
     throw new Error('Method not implemented.');
   }
 
-  public prepop(): preActionCallback {
+  public prepop<T extends IPopNavigationOptions>(option?: T): preActionCallback {
     const index = this.routeStack.length - 2;
 
     if (index < 0) {
@@ -65,12 +68,12 @@ export default class Router extends EventEmitter<IRouterEventMap> implements IRo
       if (cancel) {
         this.emit(RouteEventType.CANCEL_CHANGE, nextRouteInfo);
       } else {
-        this.pop();
+        this.pop(option);
       }
     };
   }
 
-  public prereplace(location: string | ILocation): preActionCallback {
+  public prereplace<T extends INavigationOptions>(location: string | ILocation<T>): preActionCallback {
     throw new Error('Method not implemented.');
   }
 
@@ -80,9 +83,9 @@ export default class Router extends EventEmitter<IRouterEventMap> implements IRo
    * @param {string | ILocation} location
    * @memberof Router
    */
-  public push(location: string | ILocation): void {
-    const { path, state } = this.getPathAndState(location);
-    this.driver.push(path, state);
+  public push<T extends INavigationOptions>(location: string | ILocation<T>): void {
+    const { path, state, transition } = this.getPathAndState<T>(location);
+    this.driver.push(path, state, { transition });
   }
 
   /**
@@ -90,8 +93,8 @@ export default class Router extends EventEmitter<IRouterEventMap> implements IRo
    *
    * @memberof Router
    */
-  public pop(): void {
-    this.driver.pop();
+  public pop<T extends IPopNavigationOptions>(option?: T): void {
+    this.driver.pop(option);
   }
 
   /**
@@ -99,9 +102,9 @@ export default class Router extends EventEmitter<IRouterEventMap> implements IRo
    *
    * @memberof Router
    */
-  public replace(location: string | ILocation): void {
-    const { path, state } = this.getPathAndState(location);
-    this.driver.replace(path, state);
+  public replace<T extends INavigationOptions>(location: string | ILocation<T>): void {
+    const { path, state, transition: transition } = this.getPathAndState<T>(location);
+    this.driver.replace(path, state, { transition });
   }
 
   public on<K extends keyof IRouterEventMap>(type: K, listener: IRouterEventMap[K]): void {
@@ -115,11 +118,12 @@ export default class Router extends EventEmitter<IRouterEventMap> implements IRo
     option.routes.forEach(route => this.routeManager.register(route));
   }
 
-  private getPathAndState(location: string | ILocation) {
+  private getPathAndState<T extends INavigationOptions>(location: string | ILocation<T>) {
     if (typeof location === 'string') {
       return {
         path: location,
-        state: undefined
+        state: undefined,
+        transition: undefined
       };
     }
     let pathname = '';
@@ -136,7 +140,8 @@ export default class Router extends EventEmitter<IRouterEventMap> implements IRo
 
     return {
       path: `${pathname}${queryStr}`,
-      state: location.state
+      state: location.state,
+      transition: location.transition
     };
   }
 
@@ -153,7 +158,7 @@ export default class Router extends EventEmitter<IRouterEventMap> implements IRo
     };
   }
 
-  private getRouteInfo(id: string, path: string, state: unknown): IRouteAndConfig | undefined {
+  private getRouteInfo(id: string, path: string, state?: unknown): IRouteAndConfig | undefined {
     const matchedRoute = this.matchRoute(path);
     if (matchedRoute === undefined) {
       return;
@@ -172,8 +177,8 @@ export default class Router extends EventEmitter<IRouterEventMap> implements IRo
     };
   }
 
-  private componentChange(type: RouteActionType): void {
-    this.emit(RouteEventType.CHANGE, type, this.currentRouteInfo);
+  private componentChange(type: RouteActionType, transitionOptions?: unknown): void {
+    this.emit(RouteEventType.CHANGE, type, this.currentRouteInfo, transitionOptions);
   }
 
   private initDriverListener() {
@@ -181,34 +186,40 @@ export default class Router extends EventEmitter<IRouterEventMap> implements IRo
   }
 
   private handleRouteChange(routeRecord: IRouteRecord): void {
-    const { type, id, path, state } = routeRecord;
+    const { type, id, path, state, payload } = routeRecord;
     const routeInfo = this.getRouteInfo(id, path, state);
     if (routeInfo === undefined) {
       return;
     }
-    this.updateRouteRecords(type, routeInfo);
-    this.componentChange(type);
+    const transition = payload && (payload as INavigationPayload).transition;
+    this.updateRouteRecords(type, routeInfo, transition);
   }
-  private updateRouteRecords(type: RouteActionType, routeInfo: IRouteAndConfig): void {
+  private updateRouteRecords(type: RouteActionType, routeInfo: IRouteAndConfig, transition?: unknown): void {
     switch (type) {
       case RouteActionType.PUSH:
         this.routeStack.push(routeInfo);
+        this.componentChange(type, transition);
         break;
       case RouteActionType.REPLACE:
       case RouteActionType.NONE:
         this.routeStack.pop();
         this.routeStack.push(routeInfo);
+        this.componentChange(type, transition);
         break;
       case RouteActionType.POP:
         const index = this.routeStack.findIndex(i => routeInfo.route.id === i.route.id);
         if (index === -1) {
           this.routeStack.push(routeInfo);
+          this.componentChange(type, transition);
         } else {
           const destroyedIds = this.routeStack
             .splice(index + 1, this.routeStack.length - index - 1)
             .map(r => r.route.id);
+          this.componentChange(type, transition);
           this.emit(RouteEventType.DESTROY, destroyedIds);
         }
+      default:
+        this.componentChange(type, transition);
     }
   }
 }
