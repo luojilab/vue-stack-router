@@ -19,6 +19,7 @@ export interface IWebDriverOptions {
 export default class BrowserDriver extends EventEmitter<IDriverEventMap> implements IRouterDriver {
   private currentId: number = 0;
   private initial: boolean = false;
+  private popPayloads: Array<unknown> = [];
   private documentLoaded = false;
   private mode = Mode.hash;
   constructor(options?: IWebDriverOptions) {
@@ -29,20 +30,23 @@ export default class BrowserDriver extends EventEmitter<IDriverEventMap> impleme
     this.handleDocumentLoaded();
   }
 
-  public push(path: string, state?: unknown): void {
+  public push(path: string, state?: unknown, payload?: unknown): void {
     const id = idMarker();
     window.history.pushState({ __routeState: { id, state } } as IHistoryRouteState, '', this.getUrl(path));
-    this.handleRouteChange(RouteActionType.PUSH, id, path, state);
+    this.handleRouteChange(RouteActionType.PUSH, id, path, state, payload);
   }
 
-  public pop(): void {
+  public pop(payload?: unknown): void {
+    if (payload !== undefined) {
+      this.popPayloads.push(payload);
+    }
     window.history.back();
   }
 
-  public replace(path: string, state?: unknown): void {
+  public replace(path: string, state?: unknown, payload?: unknown): void {
     const id = idMarker();
     window.history.replaceState({ __routeState: { id, state } } as IHistoryRouteState, '', this.getUrl(path));
-    this.handleRouteChange(RouteActionType.REPLACE, id, path, state);
+    this.handleRouteChange(RouteActionType.REPLACE, id, path, state, payload);
   }
 
   public on<K extends keyof IDriverEventMap>(type: K, listener: IDriverEventMap[K]): void {
@@ -70,9 +74,9 @@ export default class BrowserDriver extends EventEmitter<IDriverEventMap> impleme
     this.initListener();
   }
 
-  private handleRouteChange(type: RouteActionType, id: number, path: string, state: unknown) {
+  private handleRouteChange(type: RouteActionType, id: number, path: string, state?: unknown, payload?: unknown) {
     this.currentId = id;
-    const route: IRouteRecord = { id: String(id), path, state, type };
+    const route: IRouteRecord = { id: String(id), path, state, type, payload };
     this.emit(RouteDriverEventType.CHANGE, route);
   }
 
@@ -98,12 +102,13 @@ export default class BrowserDriver extends EventEmitter<IDriverEventMap> impleme
       const { id, state } = routeState;
       const path = this.getCurrentPath();
       const type = id > this.currentId ? RouteActionType.PUSH : RouteActionType.POP;
-      this.handleRouteChange(type, id, path, state);
+      const payload = this.popPayloads.shift();
+      this.handleRouteChange(type, id, path, state, payload);
     } else {
       const path = this.getCurrentPath();
       const id = idMarker();
       window.history.replaceState({ __routeState: { id } } as IHistoryRouteState, '', this.getUrl(path));
-      this.handleRouteChange(RouteActionType.PUSH, id, path, undefined);
+      this.handleRouteChange(RouteActionType.PUSH, id, path);
     }
   }
 
@@ -111,7 +116,7 @@ export default class BrowserDriver extends EventEmitter<IDriverEventMap> impleme
     const path = this.getCurrentPath() || '/';
     const id = idMarker();
     window.history.replaceState({ __routeState: { id } } as IHistoryRouteState, '', this.getUrl(path));
-    this.handleRouteChange(RouteActionType.NONE, id, path, undefined);
+    this.handleRouteChange(RouteActionType.NONE, id, path);
   }
 
   private getCurrentPath() {

@@ -9,7 +9,8 @@
     "object-literal-sort-keys": [true, "match-declaration-order"],
     "max-line-length": [true, 120],
     "member-ordering": [true, { "order": "fields-first" }],
-    "prefer-for-of":false
+    "prefer-for-of": false,
+    "curly": [true, "ignore-same-line"]
   },
   "rulesDirectory": []
 }

@@ -1,15 +1,27 @@
-import Vue, { CreateElement, VNode } from 'vue';
-import { IEventEmitter, RouteActionType, RouteEventType } from '../interface/common';
+import Vue, { Component, CreateElement, VNode } from 'vue';
+import { IEventEmitter, RouteActionType, RouteEventType, ViewActionType } from '../interface/common';
 import { IRouteInfo, IRouterEventMap } from '../interface/router';
+import invokeHook from '../utils/invokeHook';
+
+interface IRouteConfigWithTransition {
+  name?: string;
+  path: string;
+  component: Component;
+  transition?: Transition;
+  meta?: unknown;
+}
 
 interface IData {
   routeInfo?: IRouteInfo;
+  preRouteInfo?: IRouteInfo;
   nextRouteInfo?: IRouteInfo;
   vnodeCache: Map<string, VNode>;
-  actionType?: RouteActionType;
-  transitionType?: RouteActionType;
-  supportPreRender: boolean;
+  transitionType: RouteActionType;
+  customTransition?: Transition;
+  needDestroyedRouteId?: string;
+  preRenderMode: PreRenderMode;
 }
+type Transition = ITransitionOptions | string;
 interface ITransitionDurationConfig {
   enter: number;
   leave: number;
@@ -27,7 +39,12 @@ interface IPageViewProps {
   params: { [key: string]: string };
   state?: any;
 }
-
+const enum PreRenderMode {
+  PRE_RENDERING = 'preRendering',
+  RENDERING_CANCELED = 'renderingCanceled',
+  NONE = 'none'
+}
+const NO_TRANSITION = '__NO_TRANSITION';
 export default Vue.extend({
   name: 'RouterView',
   data() {
@@ -44,17 +61,16 @@ export default Vue.extend({
     }
     const vnode = this.renderRoute(h, this.routeInfo);
     let vNodes = [vnode];
-    let disableTransition = false;
     if (this.nextRouteInfo && this.supportPreRender) {
       const nextVNode = this.renderRoute(h, this.nextRouteInfo);
       vNodes = this.transitionType === RouteActionType.POP ? [nextVNode, vnode] : [vnode, nextVNode];
-      disableTransition = true;
     }
-    return this.transition ? this.renderTransition(h, vNodes, disableTransition) : this.renderWrapper(h, vNodes);
+    return this.renderTransition(h, vNodes);
   },
   created() {
     this.vnodeCache = new Map();
-    this.actionType = RouteActionType.NONE;
+    this.transitionType = RouteActionType.NONE;
+    this.preRenderMode = PreRenderMode.NONE;
     const event = this.getEventEmitter();
     event.on(RouteEventType.CHANGE, this.handleRouteChange);
     event.on(RouteEventType.DESTROY, this.handleRouteDestroy);
@@ -87,38 +103,34 @@ export default Vue.extend({
       vnode.key = `__route-${routeInfo.index}`;
       return vnode;
     },
-    renderTransition(h: CreateElement, vNodes: VNode[], disableTransition?: boolean): VNode {
+    renderTransition(h: CreateElement, vNodes: VNode[]): VNode {
       const vnodeData = {
         props: this.getTransitionProps(),
         on: this.getTransitionListener()
       };
-      const transitionVnode = h(
-        this.supportPreRender ? 'transition-group' : 'transition',
-        disableTransition ? { props: { tag: 'div' } } : vnodeData,
-        vNodes
-      );
+      const transitionVnode = h(this.supportPreRender ? 'transition-group' : 'transition', vnodeData, vNodes);
       return transitionVnode;
-    },
-    renderWrapper(h: CreateElement, vNodes: VNode[]): VNode {
-      return h('div', {}, vNodes);
     },
     getEventEmitter(): IEventEmitter<IRouterEventMap> {
       return this.router || this.$router;
     },
-    handleRouteChange(type: RouteActionType, routeInfo?: IRouteInfo) {
+    handleRouteChange(type: RouteActionType, routeInfo?: IRouteInfo, transition?: unknown) {
       if (routeInfo === undefined) {
         return;
       }
       if (this.routeInfo && this.routeInfo.route.id === routeInfo.route.id) {
         return;
       }
+      this.preRouteInfo = this.routeInfo;
       this.routeInfo = routeInfo;
-      if (this.nextRouteInfo !== undefined) {
-        this.actionType = undefined;
-        this.nextRouteInfo = undefined;
-        this.transitionType = undefined;
-      } else {
-        this.actionType = type;
+      this.nextRouteInfo = undefined;
+      this.transitionType = type;
+      this.customTransition = undefined;
+      if (this.isTransition(routeInfo.config.transition)) {
+        this.customTransition = routeInfo.config.transition;
+      }
+      if (this.isTransition(transition)) {
+        this.customTransition = transition;
       }
 
       this.$forceUpdate();
@@ -129,6 +141,8 @@ export default Vue.extend({
       }
       this.nextRouteInfo = routeInfo;
       this.transitionType = type;
+      this.preRenderMode = PreRenderMode.PRE_RENDERING;
+      this.customTransition = NO_TRANSITION;
       this.$forceUpdate();
     },
     handleRouteChangeCancel(routeInfo: IRouteInfo) {
@@ -140,36 +154,48 @@ export default Vue.extend({
         return;
       }
       this.nextRouteInfo = undefined;
-      this.transitionType = undefined;
-      this.actionType = undefined;
+      this.transitionType = RouteActionType.NONE;
+      this.customTransition = undefined;
+      this.preRenderMode = PreRenderMode.RENDERING_CANCELED;
 
       this.$forceUpdate();
     },
     handleRouteDestroy(ids: string[]) {
       ids.forEach(id => {
-        const vnode = this.vnodeCache.get(id);
-        if (vnode && vnode.componentInstance) {
-          vnode.componentInstance.$destroy();
+        if (this.preRouteInfo && this.preRouteInfo.route.id !== id) {
+          this.destroyComponent(id);
+        } else {
+          // Pre vnode will be deleted after transition leave
+          this.needDestroyedRouteId = id;
         }
-        this.vnodeCache.delete(id);
       });
+    },
+    destroyComponent(id: string) {
+      const instance = this.getRouteComponentInstance(id);
+      if (instance) {
+        instance.$destroy();
+      }
+      this.vnodeCache.delete(id);
+    },
+    getRouteComponentInstance(id: string): Vue | undefined {
+      const vnode = this.vnodeCache.get(id);
+      return vnode && vnode.componentInstance;
     },
     getTransitionProps(): Partial<ITransitionOptions> {
       const props: Partial<ITransitionOptions> = {
         tag: 'div'
       };
-      if (this.actionType === undefined) {
-        return props;
-      }
-      if (this.transition) {
-        if (typeof this.transition === 'string') {
-          props.name = `${this.transition}-${this.actionType}`;
+      if (this.transitionType === RouteActionType.NONE) return props;
+      const transition = this.customTransition === undefined ? this.transition : this.customTransition;
+      if (transition && transition !== NO_TRANSITION) {
+        if (typeof transition === 'string') {
+          props.name = `${transition}-${this.transitionType}`;
         } else {
-          if (this.transition.name) {
-            props.name = `${this.transition.name}-${this.actionType}`;
+          if (transition.name) {
+            props.name = `${transition.name}-${this.transitionType}`;
           }
-          props.duration = this.transition.duration;
-          props.mode = this.transition.mode;
+          props.duration = transition.duration;
+          props.mode = transition.mode;
         }
       }
       return props;
@@ -195,16 +221,72 @@ export default Vue.extend({
       return props;
     },
     handleTransitionBeforeEnter() {
-      // todo
+      if (this.routeInfo === undefined) return;
+
+      if (this.preRenderMode === PreRenderMode.NONE) {
+        const component = this.getRouteComponentInstance(this.routeInfo.route.id);
+        if (component !== undefined) {
+          invokeHook(component, ViewActionType.WILL_APPEAR);
+        }
+      } else if (this.preRenderMode === PreRenderMode.PRE_RENDERING) {
+        const currentComponent = this.getRouteComponentInstance(this.routeInfo.route.id);
+        if (currentComponent === undefined) return;
+        invokeHook(currentComponent, ViewActionType.WILL_DISAPPEAR);
+
+        const routeId = (this.nextRouteInfo && this.nextRouteInfo.route.id) || '';
+        const nextComponent = this.getRouteComponentInstance(routeId);
+        if (nextComponent === undefined) return;
+        invokeHook(nextComponent, ViewActionType.WILL_APPEAR);
+      }
     },
     handleTransitionAfterEnter() {
-      // todo
+      if (this.routeInfo === undefined || this.isPreRendering()) return;
+      const routeId = this.routeInfo.route.id;
+      const component = this.getRouteComponentInstance(routeId);
+      if (component === undefined) return;
+      invokeHook(component, ViewActionType.DID_APPEAR);
     },
     handleTransitionBeforeLeave() {
-      // todo
+      if (this.preRenderMode === PreRenderMode.NONE && this.preRouteInfo !== undefined) {
+        const component = this.getRouteComponentInstance(this.preRouteInfo.route.id);
+        if (component !== undefined) {
+          invokeHook(component, ViewActionType.WILL_DISAPPEAR);
+        }
+      }
     },
     handleTransitionAfterLeave() {
-      // todo
+      if (this.preRouteInfo !== undefined) {
+        const component = this.getRouteComponentInstance(this.preRouteInfo.route.id);
+        if (component !== undefined) {
+          invokeHook(component, ViewActionType.DID_DISAPPEAR);
+        }
+      }
+
+      if (this.preRenderMode === PreRenderMode.PRE_RENDERING && this.routeInfo !== undefined) {
+        const component = this.getRouteComponentInstance(this.routeInfo.route.id);
+        if (component !== undefined) {
+          invokeHook(component, ViewActionType.DID_APPEAR);
+        }
+        this.preRenderMode = PreRenderMode.NONE;
+      }
+      if (this.preRenderMode === PreRenderMode.RENDERING_CANCELED && this.routeInfo !== undefined) {
+        const component = this.getRouteComponentInstance(this.routeInfo.route.id);
+        if (component !== undefined) {
+          invokeHook(component, ViewActionType.DID_APPEAR);
+        }
+        this.preRenderMode = PreRenderMode.NONE;
+      }
+
+      if (this.needDestroyedRouteId) {
+        this.destroyComponent(this.needDestroyedRouteId);
+        this.needDestroyedRouteId = undefined;
+      }
+    },
+    isTransition(transition: unknown): transition is Transition {
+      return transition !== undefined;
+    },
+    isPreRendering(): boolean {
+      return this.nextRouteInfo !== undefined;
     }
   }
 });

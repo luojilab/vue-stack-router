@@ -16,9 +16,10 @@ export interface IRouteRecord {
   id: string;
   path: string;
   state?: unknown;
+  payload?: unknown;
 }
 
-export enum ViewEventType {
+export enum ViewActionType {
   WILL_APPEAR = 'willAppear',
   DID_APPEAR = 'didAppear',
   WILL_DISAPPEAR = 'willDisappear',
