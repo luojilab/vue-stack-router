@@ -4,7 +4,7 @@ export default class TreeNode<T> {
   constructor(data: T) {
     this.data = data;
   }
-  public setChild(key: string, data: TreeNode<T>) {
+  public addChild(key: string, data: TreeNode<T>) {
     this.children.set(key, data);
   }
   public removeChild(key: string) {

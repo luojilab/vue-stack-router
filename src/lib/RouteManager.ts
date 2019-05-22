@@ -77,7 +77,7 @@ export class PathTree<T> {
           break;
         }
         finalNode = new TreeNode({ path: '*', data });
-        currentNode.setChild('*', finalNode);
+        currentNode.addChild('*', finalNode);
         break;
       }
       const nodeData: INodeData<T> = { path };
@@ -89,7 +89,7 @@ export class PathTree<T> {
         nodeData.data = data;
       }
       const node = currentNode.getChild(nodeData.path) || new TreeNode(nodeData);
-      currentNode.setChild(nodeData.path, node);
+      currentNode.addChild(nodeData.path, node);
       currentNode = node;
     }
   }
