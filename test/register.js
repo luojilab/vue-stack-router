@@ -1,10 +1,10 @@
-require('ts-node').register({
+require("ts-node").register({
   skipProject: true,
   compilerOptions: {
-    moduleResolution: 'node',
-    noImplicitAny: true,
+    moduleResolution: "node",
+    noImplicitAny: false,
     strict: true,
-    module: 'commonjs',
-    target: 'esnext'
+    module: "commonjs",
+    target: "esnext",
   }
 });

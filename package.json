@@ -7,7 +7,7 @@
   "types": "src/index.d.ts",
   "scripts": {
     "build": "rollup -c build/esm.rollup.config.js && rollup -c build/commonjs.rollup.config.js ",
-    "test": "nyc mocha --require ./test/register test/**/*.test.ts",
+    "test": "nyc mocha  --require ./test/register './test/**/*.test.ts'",
     "preversion": "npm run build",
     "postversion": "git push && git push --tags",
     "doc": "typedoc --out doc/ src/lib/Router.ts --theme markdown"
@@ -18,6 +18,7 @@
     "@types/chai": "^4.1.7",
     "@types/mocha": "^5.2.5",
     "chai": "^4.2.0",
+    "jsdom-global": "^3.0.2",
     "mocha": "^5.2.0",
     "nyc": "^14.0.0",
     "rollup": "^1.2.1",

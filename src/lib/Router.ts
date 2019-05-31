@@ -17,7 +17,7 @@ import {
 } from '../interface/router';
 import { getPathnameAndQuery, parseToSearchStr } from '../utils/url';
 import EventEmitter from './EventEmitter';
-import RouteManager from './RouteManager';
+import RouteManager from './route/RouteManager';
 
 type IRouteAndConfig = Omit<IRouteInfo, 'index'>;
 /**
