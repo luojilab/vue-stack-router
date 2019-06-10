@@ -5,9 +5,11 @@ export interface IRouterOption {
   routes: IRouteConfig[];
   config?: IRouterConfig;
 }
+
 export interface IRouterConfig {
   readonly supportPreRender: boolean;
 }
+
 export interface IRouteConfig {
   name?: string;
   path: string;
@@ -15,14 +17,17 @@ export interface IRouteConfig {
   transition?: unknown;
   meta?: unknown;
 }
+
 export interface INavigationOptions extends IPopNavigationOptions {
   query: { [key: string]: unknown };
   params: { [key: string]: unknown };
   state: unknown;
 }
+
 export interface IPopNavigationOptions {
   transition: unknown;
 }
+
 export type INameLocation<T> = {
   name: string;
 } & Partial<T>;
@@ -38,7 +43,9 @@ export type IPathnameLocation<T> = {
 export function isPathnameLocation<T extends INavigationOptions>(location: any): location is IPathnameLocation<T> {
   return location.pathname !== undefined;
 }
+
 export type ILocation<T> = INameLocation<T> | IPathnameLocation<T>;
+
 export interface IRoute {
   id: string;
   name: string;
@@ -54,7 +61,9 @@ export interface IRouterEventMap {
   [RouteEventType.CANCEL_CHANGE]: (routeInfo: IRouteInfo) => void;
   [RouteEventType.DESTROY]: (ids: string[]) => void;
 }
+
 export type preActionCallback = (cancel: boolean) => void;
+
 export interface IRouter extends IEventEmitter<IRouterEventMap> {
   readonly currentRouteInfo: IRouteInfo | undefined;
   push<T extends INavigationOptions>(location: string | ILocation<T>): void;

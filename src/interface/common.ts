@@ -25,6 +25,7 @@ export enum ViewActionType {
   WILL_DISAPPEAR = 'willDisappear',
   DID_DISAPPEAR = 'didDisappear'
 }
+
 export interface IQuery {
   [k: string]: unknown;
 }
