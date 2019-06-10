@@ -1,5 +1,5 @@
 import { Component } from 'vue';
-import { IEventEmitter, IQuery, Omit, RouteActionType, RouteEventType } from './common';
+import { IEventEmitter, IQuery, RouteActionType, RouteEventType } from './common';
 
 export interface IRouterOption {
   routes: IRouteConfig[];
