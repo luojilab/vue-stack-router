@@ -1,4 +1,4 @@
-import { IRouteRecord, Omit, RouteActionType, RouteEventType } from '../interface/common';
+import { IRouteRecord, RouteActionType, RouteEventType } from '../interface/common';
 import { IRouterDriver, RouteDriverEventType } from '../interface/driver';
 import { IRouteManager } from '../interface/routeManager';
 import {

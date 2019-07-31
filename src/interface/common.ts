@@ -25,6 +25,7 @@ export enum ViewActionType {
   WILL_DISAPPEAR = 'willDisappear',
   DID_DISAPPEAR = 'didDisappear'
 }
+
 export interface IQuery {
   [k: string]: unknown;
 }
@@ -35,5 +36,3 @@ export enum RouteEventType {
   CHANGE = 'change',
   DESTROY = 'destroy'
 }
-
-export type Omit<T, K> = Pick<T, Exclude<keyof T, K>>;
