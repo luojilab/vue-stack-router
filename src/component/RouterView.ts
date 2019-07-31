@@ -3,14 +3,6 @@ import { IEventEmitter, RouteActionType, RouteEventType, ViewActionType } from '
 import { IRouteInfo, IRouterEventMap } from '../interface/router';
 import invokeHook from '../utils/invokeHook';
 
-interface IRouteConfigWithTransition {
-  name?: string;
-  path: string;
-  component: Component;
-  transition?: Transition;
-  meta?: unknown;
-}
-
 interface IData {
   routeInfo?: IRouteInfo;
   preRouteInfo?: IRouteInfo;
@@ -185,7 +177,7 @@ export default Vue.extend({
     getTransitionProps(): Partial<ITransitionOptions> {
       const props: Partial<ITransitionOptions> = {
         appear: true,
-        tag: 'div',
+        tag: 'div'
       };
       if (this.transitionType === RouteActionType.NONE) return props;
       const transition = this.customTransition === undefined ? this.transition : this.customTransition;

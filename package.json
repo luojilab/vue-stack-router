@@ -10,15 +10,18 @@
     "test": "nyc mocha  --require ./test/register './test/**/*.test.ts'",
     "preversion": "npm run build",
     "postversion": "git push && git push --tags",
-    "doc": "typedoc --out doc/ src/lib/Router.ts --theme markdown"
+    "doc": "docsify serve docs"
   },
   "author": "jiangq.leaves@gmail.com",
   "license": "MIT",
   "devDependencies": {
     "@types/chai": "^4.1.7",
+    "@types/jsdom": "^12.2.3",
     "@types/mocha": "^5.2.5",
     "chai": "^4.2.0",
     "cz-conventional-changelog": "^3.0.2",
+    "docsify-cli": "^4.3.0",
+    "jsdom": "^15.1.1",
     "jsdom-global": "^3.0.2",
     "mocha": "^5.2.0",
     "nyc": "^14.0.0",
@@ -30,7 +33,7 @@
     "tslint-config-airbnb-base": "^0.2.0",
     "typedoc": "^0.15.0",
     "typedoc-plugin-markdown": "^1.2.0",
-    "typescript": "^3.3.3",
+    "typescript": "^3.5.1",
     "vue": "^2.6.6"
   },
   "peerDependencies": {

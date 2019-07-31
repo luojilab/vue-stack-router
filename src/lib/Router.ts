@@ -39,9 +39,7 @@ export default class Router extends EventEmitter<IRouterEventMap> implements IRo
   private routeManager: IRouteManager;
   private routeStack: IRouteAndConfig[] = [];
   private driver: IRouterDriver;
-  private config: IRouterConfig = {
-    supportPreRender: false
-  };
+  private config: IRouterConfig = {};
   constructor(option: IRouterOption, driver: IRouterDriver, routeManager: IRouteManager = new RouteManager()) {
     super();
     this.routeManager = routeManager;

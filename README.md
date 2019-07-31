@@ -29,3 +29,6 @@ const driver = new BrowserDriver({ mode: 'hash' });
 const router = new Router({ routes }, driver);
 Vue.use(installer, { router });
 ```
+
+## Document
+[document](https://luojilab.github.io/vue-stack-router/)
