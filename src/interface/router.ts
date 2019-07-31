@@ -7,7 +7,6 @@ export interface IRouterOption {
 }
 
 export interface IRouterConfig {
-  readonly supportPreRender: boolean;
 }
 
 export interface IRouteConfig {
