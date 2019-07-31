@@ -15,17 +15,18 @@ describe('src/utils/invokeHook', () => {
     invokeHook(mockInstance as Vue, ViewActionType.WILL_APPEAR);
   });
 
-  // it('invokeHook should be ok when has children', done => {
-  //   const children: any = {
-  //     $options: {
-  //       willAppear() {
-  //         done();
-  //       }
-  //     }
-  //   };
-  //   const mockInstance: any = {
-  //     $children: [children as Vue]
-  //   };
-  //   invokeHook(mockInstance as Vue, ViewActionType.WILL_APPEAR);
-  // });
+  it('invokeHook should be ok when has children', done => {
+    const children: any = {
+      $options: {
+        willAppear() {
+          done();
+        }
+      }
+    };
+    const mockInstance: any = {
+      $children: [children as Vue],
+      $options: {}
+    };
+    invokeHook(mockInstance as Vue, ViewActionType.WILL_APPEAR);
+  });
 });
