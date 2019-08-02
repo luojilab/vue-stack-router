@@ -12,4 +12,6 @@ export interface IRouterDriver extends IEventEmitter<IDriverEventMap> {
   push(path: string, state?: unknown, payload?: unknown): void;
   pop(payload?: unknown): void;
   replace(path: string, state?: unknown, payload?: unknown): void;
+  generateNextId(): string;
+  deprecateNextId(): void;
 }
