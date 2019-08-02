@@ -1,4 +1,4 @@
-import Vue, { Component, CreateElement, VNode } from 'vue';
+import Vue, { Component, CreateElement, VNode, VNodeData } from 'vue';
 import { IEventEmitter, RouteActionType, RouteEventType, ViewActionType } from '../interface/common';
 import { IRouteInfo, IRouterEventMap } from '../interface/router';
 import invokeHook from '../utils/invokeHook';
@@ -55,7 +55,7 @@ export default Vue.extend({
     const vnode = this.renderRoute(h, this.routeInfo);
     let vNodes = [vnode];
     if (this.nextRouteInfo && this.supportPreRender) {
-      const nextVNode = this.renderRoute(h, this.nextRouteInfo);
+      const nextVNode = this.renderRoute(h, this.nextRouteInfo, true);
       vNodes = this.transitionType === RouteActionType.POP ? [nextVNode, vnode] : [vnode, nextVNode];
     }
     return this.renderTransition(h, vNodes);
@@ -81,19 +81,36 @@ export default Vue.extend({
     event.off(RouteEventType.DESTROY, this.handleRouteDestroy);
   },
   methods: {
-    renderRoute(h: CreateElement, routeInfo: IRouteInfo): VNode {
+    renderRoute(h: CreateElement, routeInfo: IRouteInfo, isNext?: boolean): VNode {
       const { config, route } = routeInfo;
       const cachedVNode = this.vnodeCache.get(route.id);
-      const vnode = h(config.component, {
+      const vNodeData: VNodeData = {
         props: this.getPageViewProps(routeInfo)
-      });
+      };
+      // const transition = this.customTransition === undefined ? this.transition : this.customTransition;
+      // let transitionName = '';
+      // if (typeof transition === 'string') {
+      //   transitionName = `${transition}-${this.transitionType}`;
+      // } else if (transition && transition.name) {
+      //   transitionName = `${transition.name}-${this.transitionType}`;
+      // }
+      // if (vNodeData.class === undefined) {
+      //   vNodeData.class = {};
+      // }
+
+      // const transitionStage = isNext ? 'enter' : 'leave';
+      // if (this.isPreRendering()) {
+      //   vNodeData.class[`${transitionName}-${transitionStage}`] = this.isPreRendering();
+      //   vNodeData.class[`${transitionName}-${transitionStage}-active`] = this.isPreRendering();
+      // }
+      const vnode = h(config.component, vNodeData);
       vnode.tag = `${vnode.tag}-${route.id}`;
       if (cachedVNode !== undefined) {
         vnode.componentInstance = cachedVNode.componentInstance;
       }
       this.vnodeCache.set(route.id, vnode);
       vnode.data!.keepAlive = true;
-      vnode.key = `__route-${routeInfo.index}`;
+      vnode.key = `__route-${route.id}`;
       return vnode;
     },
     renderTransition(h: CreateElement, vNodes: VNode[]): VNode {
@@ -118,24 +135,18 @@ export default Vue.extend({
       this.routeInfo = routeInfo;
       this.nextRouteInfo = undefined;
       this.transitionType = type;
-      this.customTransition = undefined;
-      if (this.isTransition(routeInfo.config.transition)) {
-        this.customTransition = routeInfo.config.transition;
-      }
-      if (this.isTransition(transition)) {
-        this.customTransition = transition;
-      }
-
+      this.setCustomTransition(routeInfo, transition);
       this.$forceUpdate();
     },
-    handleRouteWillChange(type: RouteActionType, routeInfo?: IRouteInfo) {
+    handleRouteWillChange(type: RouteActionType, routeInfo?: IRouteInfo, transition?: unknown) {
       if (routeInfo === undefined) {
         return;
       }
       this.nextRouteInfo = routeInfo;
       this.transitionType = type;
       this.preRenderMode = PreRenderMode.PRE_RENDERING;
-      this.customTransition = NO_TRANSITION;
+
+      this.setCustomTransition(routeInfo, transition);
       this.$forceUpdate();
     },
     handleRouteChangeCancel(routeInfo: IRouteInfo) {
@@ -179,7 +190,10 @@ export default Vue.extend({
         appear: true,
         tag: 'div'
       };
-      if (this.transitionType === RouteActionType.NONE) return props;
+      if (this.transitionType === RouteActionType.NONE || this.isPreRendering()) {
+        props.name = NO_TRANSITION;
+        return props;
+      }
       const transition = this.customTransition === undefined ? this.transition : this.customTransition;
       if (transition && transition !== NO_TRANSITION) {
         if (typeof transition === 'string') {
@@ -274,6 +288,15 @@ export default Vue.extend({
       if (this.needDestroyedRouteId) {
         this.destroyComponent(this.needDestroyedRouteId);
         this.needDestroyedRouteId = undefined;
+      }
+    },
+    setCustomTransition(routeInfo: IRouteInfo, transition: unknown) {
+      this.customTransition = undefined;
+      if (this.isTransition(routeInfo.config.transition)) {
+        this.customTransition = routeInfo.config.transition;
+      }
+      if (this.isTransition(transition)) {
+        this.customTransition = transition;
       }
     },
     isTransition(transition: unknown): transition is Transition {
