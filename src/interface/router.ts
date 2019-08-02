@@ -56,7 +56,7 @@ export interface IRoute {
 
 export interface IRouterEventMap {
   [RouteEventType.CHANGE]: (type: RouteActionType, route?: IRouteInfo, transitionOptions?: unknown) => void;
-  [RouteEventType.WILL_CHANGE]: (type: RouteActionType, route?: IRouteInfo) => void;
+  [RouteEventType.WILL_CHANGE]: (type: RouteActionType, route?: IRouteInfo, transitionOptions?: unknown) => void;
   [RouteEventType.CANCEL_CHANGE]: (routeInfo: IRouteInfo) => void;
   [RouteEventType.DESTROY]: (ids: string[]) => void;
 }
