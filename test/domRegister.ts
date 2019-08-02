@@ -10,6 +10,6 @@ export function register() {
   });
   globalThis.window = dom.window;
 }
-export function cancel() {
+export function reject() {
   delete globalThis.window;
 }

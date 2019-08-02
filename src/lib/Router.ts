@@ -51,7 +51,23 @@ export default class Router extends EventEmitter<IRouterEventMap> implements IRo
   }
 
   public prepush<T extends INavigationOptions>(location: string | ILocation<T>): preActionCallback {
-    throw new Error('Method not implemented.');
+    const { path, state, transition } = this.getPathAndState<T>(location);
+    const id = this.driver.generateNextId();
+    const routeInfo = this.getRouteInfo(id, path, state);
+    if (routeInfo === undefined) {
+      this.driver.deprecateNextId();
+      return (cancel: boolean) => undefined;
+    }
+    const nextRouteInfo: IRouteInfo = Object.assign({}, routeInfo, { index: this.routeStack.length });
+    this.emit(RouteEventType.WILL_CHANGE, RouteActionType.PUSH, nextRouteInfo, transition);
+    return (cancel: boolean) => {
+      if (cancel) {
+        this.driver.deprecateNextId();
+        this.emit(RouteEventType.CANCEL_CHANGE, nextRouteInfo);
+      } else {
+        this.push(location);
+      }
+    };
   }
 
   public prepop<T extends IPopNavigationOptions>(option?: T): preActionCallback {
@@ -61,7 +77,7 @@ export default class Router extends EventEmitter<IRouterEventMap> implements IRo
       return (cancel: boolean) => undefined;
     }
     const nextRouteInfo = Object.assign(this.routeStack[index], { index });
-    this.emit(RouteEventType.WILL_CHANGE, RouteActionType.POP, nextRouteInfo);
+    this.emit(RouteEventType.WILL_CHANGE, RouteActionType.POP, nextRouteInfo, option && option.transition);
     return (cancel: boolean) => {
       if (cancel) {
         this.emit(RouteEventType.CANCEL_CHANGE, nextRouteInfo);
@@ -72,7 +88,23 @@ export default class Router extends EventEmitter<IRouterEventMap> implements IRo
   }
 
   public prereplace<T extends INavigationOptions>(location: string | ILocation<T>): preActionCallback {
-    throw new Error('Method not implemented.');
+    const { path, state, transition } = this.getPathAndState<T>(location);
+    const id = this.driver.generateNextId();
+    const routeInfo = this.getRouteInfo(id, path, state);
+    if (routeInfo === undefined) {
+      this.driver.deprecateNextId();
+      return (cancel: boolean) => undefined;
+    }
+    const nextRouteInfo: IRouteInfo = Object.assign({}, routeInfo, { index: this.routeStack.length - 1 });
+    this.emit(RouteEventType.WILL_CHANGE, RouteActionType.REPLACE, nextRouteInfo, transition);
+    return (cancel: boolean) => {
+      if (cancel) {
+        this.driver.deprecateNextId();
+        this.emit(RouteEventType.CANCEL_CHANGE, nextRouteInfo);
+      } else {
+        this.replace(location);
+      }
+    };
   }
 
   /**

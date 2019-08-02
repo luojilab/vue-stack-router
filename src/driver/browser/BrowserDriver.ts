@@ -18,6 +18,7 @@ export interface IWebDriverOptions {
 
 export default class BrowserDriver extends EventEmitter<IDriverEventMap> implements IRouterDriver {
   private currentId: string = '0';
+  private nextId: string | undefined;
   private initial: boolean = false;
   private popPayloads: Array<unknown> = [];
   private documentLoaded = false;
@@ -29,9 +30,16 @@ export default class BrowserDriver extends EventEmitter<IDriverEventMap> impleme
     }
     this.handleDocumentLoaded();
   }
+  public generateNextId(): string {
+    this.nextId = IdGenerator.generateId();
+    return this.nextId;
+  }
+  public deprecateNextId() {
+    this.nextId = undefined;
+  }
 
   public push(path: string, state?: unknown, payload?: unknown): void {
-    const id = IdGenerator.generateId();
+    const id = this.nextId || IdGenerator.generateId();
     window.history.pushState({ __routeState: { id, state } } as IHistoryRouteState, '', this.getUrl(path));
     this.handleRouteChange(RouteActionType.PUSH, id, path, state, payload);
   }
@@ -44,7 +52,7 @@ export default class BrowserDriver extends EventEmitter<IDriverEventMap> impleme
   }
 
   public replace(path: string, state?: unknown, payload?: unknown): void {
-    const id = IdGenerator.generateId();
+    const id = this.nextId || IdGenerator.generateId();
     window.history.replaceState({ __routeState: { id, state } } as IHistoryRouteState, '', this.getUrl(path));
     this.handleRouteChange(RouteActionType.REPLACE, id, path, state, payload);
   }
@@ -96,6 +104,7 @@ export default class BrowserDriver extends EventEmitter<IDriverEventMap> impleme
     });
   }
   private handlePopstate(e: PopStateEvent) {
+    this.nextId = undefined;
     const historyState = e.state as IHistoryRouteState | null;
     const routeState = historyState && historyState.__routeState;
     if (routeState) {
