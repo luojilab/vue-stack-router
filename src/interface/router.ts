@@ -1,30 +1,37 @@
-import { Component } from 'vue';
-import { IEventEmitter, IQuery, RouteActionType, RouteEventType } from './common';
+import { IEventEmitter, IQuery, RouteActionType } from './common';
 
-export interface IRouterOption {
-  routes: IRouteConfig[];
+export interface IRouterOption<T> {
+  routes: Array<IRouteConfig<T>>;
   config?: IRouterConfig;
 }
 
-export interface IRouterConfig {
+export interface IRouterConfig {}
+
+export enum RouteEventType {
+  WILL_CHANGE = 'willChange',
+  CANCEL_CHANGE = 'cancelChange',
+  CHANGE = 'change',
+  DESTROY = 'destroy'
 }
 
-export interface IRouteConfig {
+export interface IRouteConfig<T> {
   name?: string;
   path: string;
-  component: Component;
+  component: T;
   transition?: unknown;
   meta?: unknown;
 }
-
-export interface INavigationOptions extends IPopNavigationOptions {
+export interface IBaseNavigationOptions {
+  transition: string;
+}
+export interface INavigationOptions extends IBaseNavigationOptions {
   query: { [key: string]: unknown };
   params: { [key: string]: unknown };
   state: unknown;
 }
 
-export interface IPopNavigationOptions {
-  transition: unknown;
+export interface IPopNavigationOptions extends IBaseNavigationOptions {
+  n: number;
 }
 
 export type INameLocation<T> = {
@@ -54,29 +61,30 @@ export interface IRoute {
   state?: unknown;
 }
 
-export interface IRouterEventMap {
-  [RouteEventType.CHANGE]: (type: RouteActionType, route?: IRouteInfo, transitionOptions?: unknown) => void;
-  [RouteEventType.WILL_CHANGE]: (type: RouteActionType, route?: IRouteInfo, transitionOptions?: unknown) => void;
-  [RouteEventType.CANCEL_CHANGE]: (routeInfo: IRouteInfo) => void;
+export interface IRouterEventMap<T> {
+  [RouteEventType.CHANGE]: (type: RouteActionType, route?: IRouteInfo<T>, transitionOptions?: unknown) => void;
+  [RouteEventType.WILL_CHANGE]: (type: RouteActionType, route?: IRouteInfo<T>, transitionOptions?: unknown) => void;
+  [RouteEventType.CANCEL_CHANGE]: (routeInfo: IRouteInfo<T>) => void;
   [RouteEventType.DESTROY]: (ids: string[]) => void;
 }
 
 export type preActionCallback = (cancel: boolean) => void;
 
-export interface IRouter extends IEventEmitter<IRouterEventMap> {
-  readonly currentRouteInfo: IRouteInfo | undefined;
+export interface IRouter<Component> extends IEventEmitter<IRouterEventMap<Component>> {
+  readonly currentRouteInfo: IRouteInfo<Component> | undefined;
   push<T extends INavigationOptions>(location: string | ILocation<T>): void;
   prepush<T extends INavigationOptions>(location: string | ILocation<T>): preActionCallback;
-  pop<T extends IPopNavigationOptions>(option?: T): void;
-  prepop<T extends IPopNavigationOptions>(option?: T): preActionCallback;
+  pop<T extends IPopNavigationOptions>(option?: Partial<T>): void;
+  prepop<T extends IPopNavigationOptions>(option?: Partial<T>): preActionCallback;
+  popToBottom<T extends IBaseNavigationOptions>(option?: Partial<T>): void;
   replace<T extends INavigationOptions>(location: string | ILocation<T>): void;
   prereplace<T extends INavigationOptions>(location: string | ILocation<T>): preActionCallback;
 }
 
-export interface IRouteInfo {
+export interface IRouteInfo<Component> {
   index: number;
   route: IRoute;
-  config: IRouteConfig;
+  config: IRouteConfig<Component>;
 }
 
 export interface INavigationPayload {

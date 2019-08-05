@@ -1,8 +1,8 @@
-import Vue from 'vue';
+import Vue, { Component } from 'vue';
 import { IRouter } from './interface/router';
 declare module 'vue/types/vue' {
   interface Vue {
-    $router: IRouter;
+    $router: IRouter<Component>;
   }
 }
 declare module 'vue/types/options' {

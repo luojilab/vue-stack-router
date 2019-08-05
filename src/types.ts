@@ -1,12 +1,6 @@
 // exported types
-export {
-  IEventEmitter,
-  RouteActionType,
-  RouteEventType,
-  ViewActionType,
-  IRouteRecord
-} from './interface/common';
-export { IDriverEventMap, IRouterDriver, RouteDriverEventType } from './interface/driver';
+export { IEventEmitter, RouteActionType, ViewActionType } from './interface/common';
+export { IDriverEventMap, IRouterDriver, RouteDriverEventType, IRouteRecord } from './interface/driver';
 export { IMatchedRoute, IRouteManager } from './interface/routeManager';
 export {
   IRouter,
@@ -17,5 +11,6 @@ export {
   IRouteConfig,
   IRouteInfo,
   IRoute,
-  INavigationOptions
+  INavigationOptions,
+  RouteEventType
 } from './interface/router';
