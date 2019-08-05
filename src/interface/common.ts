@@ -11,14 +11,6 @@ export enum RouteActionType {
   REPLACE = 'replace'
 }
 
-export interface IRouteRecord {
-  type: RouteActionType;
-  id: string;
-  path: string;
-  state?: unknown;
-  payload?: unknown;
-}
-
 export enum ViewActionType {
   WILL_APPEAR = 'willAppear',
   DID_APPEAR = 'didAppear',
@@ -28,11 +20,4 @@ export enum ViewActionType {
 
 export interface IQuery {
   [k: string]: unknown;
-}
-
-export enum RouteEventType {
-  WILL_CHANGE = 'willChange',
-  CANCEL_CHANGE = 'cancelChange',
-  CHANGE = 'change',
-  DESTROY = 'destroy'
 }

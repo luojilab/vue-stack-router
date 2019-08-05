@@ -1,5 +1,5 @@
-import { IRouteRecord, RouteActionType } from '../../interface/common';
-import { IDriverEventMap, IRouterDriver, RouteDriverEventType } from '../../interface/driver';
+import { RouteActionType } from '../../interface/common';
+import { IDriverEventMap, IRouterDriver, RouteDriverEventType, IRouteRecord } from '../../interface/driver';
 import EventEmitter from '../../lib/EventEmitter';
 import IdGenerator from '../../utils/IdGenerator';
 interface IHistoryRouteState {
@@ -17,7 +17,7 @@ export interface IWebDriverOptions {
 }
 
 export default class BrowserDriver extends EventEmitter<IDriverEventMap> implements IRouterDriver {
-  private currentId: string = '0';
+  private currentId: string;
   private nextId: string | undefined;
   private initial: boolean = false;
   private popPayloads: Array<unknown> = [];
@@ -28,6 +28,7 @@ export default class BrowserDriver extends EventEmitter<IDriverEventMap> impleme
     if (options) {
       this.mode = options.mode;
     }
+    this.currentId = IdGenerator.generateId();
     this.handleDocumentLoaded();
   }
   public generateNextId(): string {
@@ -40,19 +41,22 @@ export default class BrowserDriver extends EventEmitter<IDriverEventMap> impleme
 
   public push(path: string, state?: unknown, payload?: unknown): void {
     const id = this.nextId || IdGenerator.generateId();
+    this.deprecateNextId();
     window.history.pushState({ __routeState: { id, state } } as IHistoryRouteState, '', this.getUrl(path));
     this.handleRouteChange(RouteActionType.PUSH, id, path, state, payload);
   }
 
-  public pop(payload?: unknown): void {
+  public pop(n: number, payload?: unknown): void {
     if (payload !== undefined) {
       this.popPayloads.push(payload);
     }
-    window.history.back();
+    const delta = n < 1 ? -1 : -n;
+    window.history.go(delta);
   }
 
   public replace(path: string, state?: unknown, payload?: unknown): void {
     const id = this.nextId || IdGenerator.generateId();
+    this.deprecateNextId();
     window.history.replaceState({ __routeState: { id, state } } as IHistoryRouteState, '', this.getUrl(path));
     this.handleRouteChange(RouteActionType.REPLACE, id, path, state, payload);
   }
@@ -88,12 +92,6 @@ export default class BrowserDriver extends EventEmitter<IDriverEventMap> impleme
     this.emit(RouteDriverEventType.CHANGE, route);
   }
 
-  /**
-   * 初始化
-   *
-   * @private
-   * @memberof WebRouterDriver
-   */
   private initListener() {
     window.addEventListener('popstate', e => {
       // Old safari will emit a 'popstate' event on page load
@@ -104,11 +102,12 @@ export default class BrowserDriver extends EventEmitter<IDriverEventMap> impleme
     });
   }
   private handlePopstate(e: PopStateEvent) {
-    this.nextId = undefined;
+    this.deprecateNextId();
     const historyState = e.state as IHistoryRouteState | null;
     const routeState = historyState && historyState.__routeState;
     if (routeState) {
       const { id, state } = routeState;
+
       const path = this.getCurrentPath();
       const type = IdGenerator.compare(id, this.currentId) > 0 ? RouteActionType.PUSH : RouteActionType.POP;
       const payload = this.popPayloads.shift();
@@ -123,9 +122,17 @@ export default class BrowserDriver extends EventEmitter<IDriverEventMap> impleme
 
   private initRouter() {
     const path = this.getCurrentPath() || '/';
-    const id = IdGenerator.generateId();
-    window.history.replaceState({ __routeState: { id } } as IHistoryRouteState, '', this.getUrl(path));
-    this.handleRouteChange(RouteActionType.NONE, id, path);
+    let id: string;
+    let state: unknown;
+    const currentState = window.history.state as IHistoryRouteState;
+    if (!currentState || currentState.__routeState === undefined) {
+      id = this.currentId;
+      window.history.replaceState({ __routeState: { id } } as IHistoryRouteState, '', this.getUrl(path));
+    } else {
+      id = currentState.__routeState.id;
+      state = currentState.__routeState.state;
+    }
+    this.handleRouteChange(RouteActionType.NONE, id, path, state);
   }
 
   private getCurrentPath() {

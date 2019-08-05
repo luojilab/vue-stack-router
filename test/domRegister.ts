@@ -1,5 +1,4 @@
 import { JSDOM } from 'jsdom';
-
 export function register() {
   const dom = new JSDOM(``, {
     url: 'https://example.org/',
@@ -9,6 +8,7 @@ export function register() {
     storageQuota: 10000000
   });
   globalThis.window = dom.window;
+  globalThis.PopStateEvent = dom.window.PopStateEvent;
 }
 export function reject() {
   delete globalThis.window;

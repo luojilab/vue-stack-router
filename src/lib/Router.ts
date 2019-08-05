@@ -1,11 +1,13 @@
-import { IRouteRecord, RouteActionType, RouteEventType } from '../interface/common';
-import { IRouterDriver, RouteDriverEventType } from '../interface/driver';
+import {  RouteActionType } from '../interface/common';
+import { IRouterDriver, RouteDriverEventType, IRouteRecord } from '../interface/driver';
 import { IRouteManager } from '../interface/routeManager';
 import {
+  IBaseNavigationOptions,
   ILocation,
   INavigationOptions,
   INavigationPayload,
   IPopNavigationOptions,
+  IRouteConfig,
   IRouteInfo,
   IRouter,
   IRouterConfig,
@@ -13,34 +15,40 @@ import {
   IRouterOption,
   isNameLocation,
   isPathnameLocation,
-  preActionCallback
+  preActionCallback,
+  RouteEventType
 } from '../interface/router';
 import { getPathnameAndQuery, parseToSearchStr } from '../utils/url';
 import EventEmitter from './EventEmitter';
 import RouteManager from './route/RouteManager';
 
-type IRouteAndConfig = Omit<IRouteInfo, 'index'>;
+type IRouteAndConfig<Component> = Omit<IRouteInfo<Component>, 'index'>;
 /**
  * Router
  *
  * @export
  * @class Router
- * @extends {EventEmitter<IRouterEventMap>}
- * @implements {IRouter}
+ * @extends {EventEmitter<IRouterEventMap<Component>>}
+ * @implements {IRouter<Component>}
+ * @template Component
  */
-export default class Router extends EventEmitter<IRouterEventMap> implements IRouter {
-  public get currentRouteInfo(): IRouteInfo | undefined {
+export default class Router<Component> extends EventEmitter<IRouterEventMap<Component>> implements IRouter<Component> {
+  public get currentRouteInfo(): IRouteInfo<Component> | undefined {
     const routeAndConfig = this.routeStack[this.routeStack.length - 1];
     if (!routeAndConfig) {
       return;
     }
     return Object.assign(routeAndConfig, { index: this.routeStack.length - 1 });
   }
-  private routeManager: IRouteManager;
-  private routeStack: IRouteAndConfig[] = [];
+  private routeManager: IRouteManager<IRouteConfig<Component>>;
+  private routeStack: Array<IRouteAndConfig<Component>> = [];
   private driver: IRouterDriver;
   private config: IRouterConfig = {};
-  constructor(option: IRouterOption, driver: IRouterDriver, routeManager: IRouteManager = new RouteManager()) {
+  constructor(
+    option: IRouterOption<Component>,
+    driver: IRouterDriver,
+    routeManager: IRouteManager<IRouteConfig<Component>> = new RouteManager<IRouteConfig<Component>>()
+  ) {
     super();
     this.routeManager = routeManager;
     this.driver = driver;
@@ -58,7 +66,7 @@ export default class Router extends EventEmitter<IRouterEventMap> implements IRo
       this.driver.deprecateNextId();
       return (cancel: boolean) => undefined;
     }
-    const nextRouteInfo: IRouteInfo = Object.assign({}, routeInfo, { index: this.routeStack.length });
+    const nextRouteInfo: IRouteInfo<Component> = Object.assign({}, routeInfo, { index: this.routeStack.length });
     this.emit(RouteEventType.WILL_CHANGE, RouteActionType.PUSH, nextRouteInfo, transition);
     return (cancel: boolean) => {
       if (cancel) {
@@ -70,7 +78,7 @@ export default class Router extends EventEmitter<IRouterEventMap> implements IRo
     };
   }
 
-  public prepop<T extends IPopNavigationOptions>(option?: T): preActionCallback {
+  public prepop<T extends IPopNavigationOptions>(option?: Partial<T>): preActionCallback {
     const index = this.routeStack.length - 2;
 
     if (index < 0) {
@@ -95,7 +103,7 @@ export default class Router extends EventEmitter<IRouterEventMap> implements IRo
       this.driver.deprecateNextId();
       return (cancel: boolean) => undefined;
     }
-    const nextRouteInfo: IRouteInfo = Object.assign({}, routeInfo, { index: this.routeStack.length - 1 });
+    const nextRouteInfo: IRouteInfo<Component> = Object.assign({}, routeInfo, { index: this.routeStack.length - 1 });
     this.emit(RouteEventType.WILL_CHANGE, RouteActionType.REPLACE, nextRouteInfo, transition);
     return (cancel: boolean) => {
       if (cancel) {
@@ -119,17 +127,27 @@ export default class Router extends EventEmitter<IRouterEventMap> implements IRo
   }
 
   /**
-   * Pop the page on the top of stack
+   *  Pop the page on the top of stack
    *
+   * @template T
+   * @param {Partial<T>} [option]
+   * @returns {void}
    * @memberof Router
    */
-  public pop<T extends IPopNavigationOptions>(option?: T): void {
-    this.driver.pop(option);
+  public pop<T extends IPopNavigationOptions>(option?: Partial<T>): void {
+    if (this.routeStack.length <= 1) return;
+    let n: number = (option && option.n) || 1;
+    if (n > this.routeStack.length - 1) {
+      n = this.routeStack.length - 1;
+    }
+    this.driver.pop(n, option);
   }
 
   /**
-   * Pop the current page
+   *  Pop the current page
    *
+   * @template T
+   * @param {(string | ILocation<T>)} location
    * @memberof Router
    */
   public replace<T extends INavigationOptions>(location: string | ILocation<T>): void {
@@ -137,15 +155,27 @@ export default class Router extends EventEmitter<IRouterEventMap> implements IRo
     this.driver.replace(path, state, { transition });
   }
 
-  public on<K extends keyof IRouterEventMap>(type: K, listener: IRouterEventMap[K]): void {
+  /**
+   * Pop to the bottom stack
+   *
+   * @template T
+   * @param {Partial<T>} [option]
+   * @memberof Router
+   */
+  public popToBottom<T extends IBaseNavigationOptions>(option?: Partial<T>): void {
+    const popOption = Object.assign({ n: this.routeStack.length - 1 }, option);
+    this.pop(popOption);
+  }
+
+  public on<K extends keyof IRouterEventMap<Component>>(type: K, listener: IRouterEventMap<Component>[K]): void {
     super.on(type, listener);
     if (type === RouteEventType.CHANGE) {
       this.componentChange(RouteActionType.NONE);
     }
   }
 
-  private initRoute(option: IRouterOption) {
-    option.routes.forEach(route => this.routeManager.register(route));
+  private initRoute(option: IRouterOption<Component>) {
+    option.routes.forEach(route => this.routeManager.register(route.path, route.name, route));
   }
 
   private getPathAndState<T extends INavigationOptions>(location: string | ILocation<T>) {
@@ -188,7 +218,7 @@ export default class Router extends EventEmitter<IRouterEventMap> implements IRo
     };
   }
 
-  private getRouteInfo(id: string, path: string, state?: unknown): IRouteAndConfig | undefined {
+  private getRouteInfo(id: string, path: string, state?: unknown): IRouteAndConfig<Component> | undefined {
     const matchedRoute = this.matchRoute(path);
     if (matchedRoute === undefined) {
       return;
@@ -224,7 +254,7 @@ export default class Router extends EventEmitter<IRouterEventMap> implements IRo
     const transition = payload && (payload as INavigationPayload).transition;
     this.updateRouteRecords(type, routeInfo, transition);
   }
-  private updateRouteRecords(type: RouteActionType, routeInfo: IRouteAndConfig, transition?: unknown): void {
+  private updateRouteRecords(type: RouteActionType, routeInfo: IRouteAndConfig<Component>, transition?: unknown): void {
     switch (type) {
       case RouteActionType.PUSH:
         this.routeStack.push(routeInfo);
