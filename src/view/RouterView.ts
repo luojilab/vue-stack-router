@@ -1,6 +1,6 @@
 import Vue, { Component, CreateElement, VNode, VNodeData } from 'vue';
-import { IEventEmitter, RouteActionType, ViewActionType } from '../interface/common';
-import { IRouteInfo, IRouterEventMap, RouteEventType } from '../interface/router';
+import { ViewActionType } from '../interface/common';
+import { IRouteInfo, IRouter, RouteEventType } from '../interface/router';
 import invokeHook from '../utils/invokeHook';
 
 interface IData {
@@ -8,7 +8,7 @@ interface IData {
   preRouteInfo?: IRouteInfo<Component>;
   nextRouteInfo?: IRouteInfo<Component>;
   vnodeCache: Map<string, VNode>;
-  transitionType: RouteActionType;
+  transitionType?: string;
   customTransition?: Transition;
   needDestroyedRouteId?: string;
   preRenderMode: PreRenderMode;
@@ -44,9 +44,9 @@ export default Vue.extend({
     return {} as IData;
   },
   props: {
-    router: Object as PropsTypes<IEventEmitter<IRouterEventMap<Component>> | undefined>,
-    transition: ([Object, String] as unknown) as PropsTypes<ITransitionOptions | string | undefined>,
-    supportPreRender: Boolean as PropsTypes<boolean>
+    router: Object as PropsTypes<IRouter<Component> | undefined>,
+    supportPreRender: Boolean as PropsTypes<boolean>,
+    transition: ([Object, String] as unknown) as PropsTypes<ITransitionOptions | string | undefined>
   },
   render(h: CreateElement): VNode {
     if (!this.routeInfo) {
@@ -56,25 +56,26 @@ export default Vue.extend({
     let vNodes = [vnode];
     if (this.nextRouteInfo && this.supportPreRender) {
       const nextVNode = this.renderRoute(h, this.nextRouteInfo, true);
-      vNodes = this.transitionType === RouteActionType.POP ? [nextVNode, vnode] : [vnode, nextVNode];
+      vNodes = [nextVNode, vnode];
     }
     return this.renderTransition(h, vNodes);
   },
   created() {
     this.vnodeCache = new Map();
-    this.transitionType = RouteActionType.NONE;
+    this.transitionType = undefined;
+    const router = this.getRouter();
+    this.routeInfo = router.currentRouteInfo;
     this.preRenderMode = PreRenderMode.NONE;
-    const event = this.getEventEmitter();
-    event.on(RouteEventType.CHANGE, this.handleRouteChange);
-    event.on(RouteEventType.DESTROY, this.handleRouteDestroy);
+    router.on(RouteEventType.CHANGE, this.handleRouteChange);
+    router.on(RouteEventType.DESTROY, this.handleRouteDestroy);
 
     if (this.supportPreRender) {
-      event.on(RouteEventType.WILL_CHANGE, this.handleRouteWillChange);
-      event.on(RouteEventType.CANCEL_CHANGE, this.handleRouteChangeCancel);
+      router.on(RouteEventType.WILL_CHANGE, this.handleRouteWillChange);
+      router.on(RouteEventType.CANCEL_CHANGE, this.handleRouteChangeCancel);
     }
   },
   destroyed() {
-    const event = this.getEventEmitter();
+    const event = this.getRouter();
     event.off(RouteEventType.CHANGE, this.handleRouteChange);
     event.off(RouteEventType.WILL_CHANGE, this.handleRouteWillChange);
     event.off(RouteEventType.CANCEL_CHANGE, this.handleRouteChangeCancel);
@@ -121,10 +122,10 @@ export default Vue.extend({
       const transitionVnode = h(this.supportPreRender ? 'transition-group' : 'transition', vnodeData, vNodes);
       return transitionVnode;
     },
-    getEventEmitter(): IEventEmitter<IRouterEventMap<Component>> {
+    getRouter(): IRouter<Component> {
       return this.router || this.$router;
     },
-    handleRouteChange(type: RouteActionType, routeInfo?: IRouteInfo<Component>, transition?: unknown) {
+    handleRouteChange(type: string, routeInfo?: IRouteInfo<Component>, transition?: unknown) {
       if (routeInfo === undefined) {
         return;
       }
@@ -138,7 +139,7 @@ export default Vue.extend({
       this.setCustomTransition(routeInfo, transition);
       this.$forceUpdate();
     },
-    handleRouteWillChange(type: RouteActionType, routeInfo?: IRouteInfo<Component>, transition?: unknown) {
+    handleRouteWillChange(type: string, routeInfo?: IRouteInfo<Component>, transition?: unknown) {
       if (routeInfo === undefined) {
         return;
       }
@@ -158,7 +159,7 @@ export default Vue.extend({
         return;
       }
       this.nextRouteInfo = undefined;
-      this.transitionType = RouteActionType.NONE;
+      this.transitionType = undefined;
       this.customTransition = undefined;
       this.preRenderMode = PreRenderMode.RENDERING_CANCELED;
 
@@ -190,7 +191,7 @@ export default Vue.extend({
         appear: true,
         tag: 'div'
       };
-      if (this.transitionType === RouteActionType.NONE || this.isPreRendering()) {
+      if (!this.transitionType || this.isPreRendering()) {
         props.name = NO_TRANSITION;
         return props;
       }

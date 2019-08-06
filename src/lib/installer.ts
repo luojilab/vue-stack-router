@@ -1,6 +1,6 @@
 import { Component, VueConstructor } from 'vue';
-import RouterView from '../component/RouterView';
 import { IRouter } from '../interface/router';
+import RouterView from '../view/RouterView';
 interface IConnectorOptions {
   router: IRouter<Component>;
 }

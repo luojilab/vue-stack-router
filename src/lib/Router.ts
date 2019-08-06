@@ -1,5 +1,5 @@
-import {  RouteActionType } from '../interface/common';
-import { IRouterDriver, RouteDriverEventType, IRouteRecord } from '../interface/driver';
+import { RouteActionType } from '../interface/common';
+import { IRouterDriver, IRouteRecord, RouteDriverEventType } from '../interface/driver';
 import { IRouteManager } from '../interface/routeManager';
 import {
   IBaseNavigationOptions,
@@ -13,16 +13,16 @@ import {
   IRouterConfig,
   IRouterEventMap,
   IRouterOption,
-  isNameLocation,
-  isPathnameLocation,
   preActionCallback,
   RouteEventType
 } from '../interface/router';
+import { isNameLocation, isPathnameLocation } from '../utils/helpers';
 import { getPathnameAndQuery, parseToSearchStr } from '../utils/url';
 import EventEmitter from './EventEmitter';
 import RouteManager from './route/RouteManager';
 
 type IRouteAndConfig<Component> = Omit<IRouteInfo<Component>, 'index'>;
+
 /**
  * Router
  *
@@ -44,18 +44,20 @@ export default class Router<Component> extends EventEmitter<IRouterEventMap<Comp
   private routeStack: Array<IRouteAndConfig<Component>> = [];
   private driver: IRouterDriver;
   private config: IRouterConfig = {};
+
   constructor(
     option: IRouterOption<Component>,
     driver: IRouterDriver,
-    routeManager: IRouteManager<IRouteConfig<Component>> = new RouteManager<IRouteConfig<Component>>()
+    routeManager?: IRouteManager<IRouteConfig<Component>>
   ) {
     super();
-    this.routeManager = routeManager;
+    this.routeManager = routeManager || new RouteManager<IRouteConfig<Component>>();
     this.driver = driver;
     Object.assign(this.config, option.config);
 
     this.initRoute(option);
     this.initDriverListener();
+    this.initRouteInfo();
   }
 
   public prepush<T extends INavigationOptions>(location: string | ILocation<T>): preActionCallback {
@@ -167,15 +169,22 @@ export default class Router<Component> extends EventEmitter<IRouterEventMap<Comp
     this.pop(popOption);
   }
 
-  public on<K extends keyof IRouterEventMap<Component>>(type: K, listener: IRouterEventMap<Component>[K]): void {
-    super.on(type, listener);
-    if (type === RouteEventType.CHANGE) {
-      this.componentChange(RouteActionType.NONE);
+  private initRoute(option: IRouterOption<Component>) {
+    option.routes.forEach(route => this.routeManager.register(route.path, route.name, route));
+  }
+
+  private initRouteInfo() {
+    const { id, path, state } = this.driver.getCurrentRouteRecord();
+    const routeInfo = this.getRouteInfo(id, path, state);
+    if (routeInfo !== undefined) {
+      this.routeStack.push(routeInfo);
     }
   }
 
-  private initRoute(option: IRouterOption<Component>) {
-    option.routes.forEach(route => this.routeManager.register(route.path, route.name, route));
+  private initDriverListener() {
+    this.driver.on(RouteDriverEventType.CHANGE, (type: RouteActionType, routeRecord: IRouteRecord, payload: unknown) =>
+      this.handleRouteChange(type, routeRecord, payload)
+    );
   }
 
   private getPathAndState<T extends INavigationOptions>(location: string | ILocation<T>) {
@@ -241,12 +250,8 @@ export default class Router<Component> extends EventEmitter<IRouterEventMap<Comp
     this.emit(RouteEventType.CHANGE, type, this.currentRouteInfo, transitionOptions);
   }
 
-  private initDriverListener() {
-    this.driver.on(RouteDriverEventType.CHANGE, (routeRecord: IRouteRecord) => this.handleRouteChange(routeRecord));
-  }
-
-  private handleRouteChange(routeRecord: IRouteRecord): void {
-    const { type, id, path, state, payload } = routeRecord;
+  private handleRouteChange(type: RouteActionType, routeRecord: IRouteRecord, payload: unknown): void {
+    const { id, path, state } = routeRecord;
     const routeInfo = this.getRouteInfo(id, path, state);
     if (routeInfo === undefined) {
       return;
@@ -261,7 +266,6 @@ export default class Router<Component> extends EventEmitter<IRouterEventMap<Comp
         this.componentChange(type, transition);
         break;
       case RouteActionType.REPLACE:
-      case RouteActionType.NONE:
         this.routeStack.pop();
         this.routeStack.push(routeInfo);
         this.componentChange(type, transition);
