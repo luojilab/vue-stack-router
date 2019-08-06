@@ -13,16 +13,16 @@ import {
   IRouterConfig,
   IRouterEventMap,
   IRouterOption,
-  isNameLocation,
-  isPathnameLocation,
   preActionCallback,
   RouteEventType
 } from '../interface/router';
+import { isNameLocation, isPathnameLocation } from '../utils/helpers';
 import { getPathnameAndQuery, parseToSearchStr } from '../utils/url';
 import EventEmitter from './EventEmitter';
 import RouteManager from './route/RouteManager';
 
 type IRouteAndConfig<Component> = Omit<IRouteInfo<Component>, 'index'>;
+
 /**
  * Router
  *

@@ -38,17 +38,9 @@ export type INameLocation<T> = {
   name: string;
 } & Partial<T>;
 
-export function isNameLocation<T extends INavigationOptions>(location: any): location is INameLocation<T> {
-  return location.name !== undefined;
-}
-
 export type IPathnameLocation<T> = {
   pathname: string;
 } & Partial<Omit<T, 'params'>>;
-
-export function isPathnameLocation<T extends INavigationOptions>(location: any): location is IPathnameLocation<T> {
-  return location.pathname !== undefined;
-}
 
 export type ILocation<T> = INameLocation<T> | IPathnameLocation<T>;
 
