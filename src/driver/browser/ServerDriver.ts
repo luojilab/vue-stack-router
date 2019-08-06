@@ -3,15 +3,19 @@ import { IDriverEventMap, IRouterDriver, IRouteRecord, RouteDriverEventType } fr
 import EventEmitter from '../../lib/EventEmitter';
 import IdGenerator from '../../utils/IdGenerator';
 
-interface IHistoryRecord {
-  id: string;
-  path: string;
-  state?: unknown;
-}
+export interface IServerDriverOptions {}
 
 export default class ServerDriver extends EventEmitter<IDriverEventMap> implements IRouterDriver {
-  private stack: IHistoryRecord[] = [];
+  private stack: IRouteRecord[] = [];
   private nextId: string | undefined;
+  constructor(options?: IServerDriverOptions) {
+    super();
+    this.initRouteRecord();
+  }
+
+  public getCurrentRouteRecord(): IRouteRecord {
+    return this.stack[this.stack.length - 1];
+  }
   public push(path: string, state?: unknown, payload?: unknown): void {
     const id = this.nextId || IdGenerator.generateId();
     this.stack.push({ id, path, state });
@@ -43,8 +47,14 @@ export default class ServerDriver extends EventEmitter<IDriverEventMap> implemen
   public deprecateNextId() {
     this.nextId = undefined;
   }
+  private initRouteRecord() {
+    this.stack.push({
+      id: IdGenerator.generateId(),
+      path: '/'
+    });
+  }
   private handleRouteChange(type: RouteActionType, id: string, path: string, state?: unknown, payload?: unknown) {
-    const route: IRouteRecord = { id, path, state, type, payload };
-    this.emit(RouteDriverEventType.CHANGE, route);
+    const routeRecord: IRouteRecord = { id, path, state };
+    this.emit(RouteDriverEventType.CHANGE, type, routeRecord, payload);
   }
 }

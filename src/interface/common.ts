@@ -5,7 +5,6 @@ export interface IEventEmitter<T> {
 }
 
 export enum RouteActionType {
-  NONE = 'none',
   PUSH = 'push',
   POP = 'pop',
   REPLACE = 'replace'
