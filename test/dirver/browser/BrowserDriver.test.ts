@@ -1,33 +1,29 @@
 import { strict as assert } from 'assert';
 import BrowserDriver, { Mode } from '../../../src/driver/browser/BrowserDriver';
-import { RouteActionType, RouteDriverEventType } from '../../../src/types';
+import { RouteDriverEventType } from '../../../src/types';
 import { register, reject } from '../../domRegister';
 import { sleep } from '../../helpers/utils';
 
 describe('src/driver/browser/BrowserDriver', () => {
   beforeEach(() => register());
   afterEach(() => reject());
-  it('init event should be ok', done => {
+  it('BrowserDriver#getCurrentRouteRecord', () => {
     const driver = new BrowserDriver();
-    driver.on(RouteDriverEventType.CHANGE, record => {
-      assert.equal(record.path, '/');
-      assert.equal(record.type, 'none');
-      assert.equal(record.state, undefined);
-      assert.equal(record.payload, undefined);
-      assert.equal(window.history.state.__routeState.id, record.id);
-      assert.equal(window.location.hash, '#/');
-      done();
-    });
+    const record = driver.getCurrentRouteRecord();
+    assert.equal(record.path, '/');
+    assert.equal(record.state, undefined);
+    assert.equal(window.history.state.__routeState.id, record.id);
+    assert.equal(window.location.hash, '#/');
   });
 
   it('BrowserDriver#push should be ok', done => {
     const driver = new BrowserDriver();
-    driver.on(RouteDriverEventType.CHANGE, record => {
+    driver.on(RouteDriverEventType.CHANGE, (type, record, payload) => {
       if (record.path === '/test') {
         try {
-          assert.equal(record.type, 'push');
+          assert.equal(type, 'push');
           assert.equal(record.state, 'state');
-          assert.equal(record.payload, 'payload');
+          assert.equal(payload, 'payload');
           assert.equal(window.history.state.__routeState.id, record.id);
           assert.equal(window.history.state.__routeState.state, record.state);
           assert.equal(window.location.hash, '#/test');
@@ -46,11 +42,10 @@ describe('src/driver/browser/BrowserDriver', () => {
       driver.push('/test1', 'state1', 'payload1');
       driver.push('/test2', 'state2', 'payload2');
       driver.push('/test3', 'state3', 'payload3');
-      driver.on(RouteDriverEventType.CHANGE, record => {
-        if (record.type === RouteActionType.NONE) return;
-        assert.equal(record.type, 'pop');
+      driver.on(RouteDriverEventType.CHANGE, (type, record, payload) => {
+        assert.equal(type, 'pop');
         assert.equal(record.state, 'state2');
-        assert.equal(record.payload, 'popPayload');
+        assert.equal(payload, 'popPayload');
 
         assert.equal(window.location.hash, '#/test2');
         done();
@@ -62,11 +57,10 @@ describe('src/driver/browser/BrowserDriver', () => {
       driver.push('/test1', 'state1', 'payload1');
       driver.push('/test2', 'state2', 'payload2');
       driver.push('/test3', 'state3', 'payload3');
-      driver.on(RouteDriverEventType.CHANGE, record => {
-        if (record.type === RouteActionType.NONE) return;
-        assert.equal(record.type, 'pop');
+      driver.on(RouteDriverEventType.CHANGE, (type, record, payload) => {
+        assert.equal(type, 'pop');
         assert.equal(record.state, 'state1');
-        assert.equal(record.payload, 'popPayload');
+        assert.equal(payload, 'popPayload');
         assert.equal(window.history.state.__routeState.id, record.id);
         assert.equal(window.history.state.__routeState.state, record.state);
         assert.equal(window.location.hash, '#/test1');
@@ -79,11 +73,10 @@ describe('src/driver/browser/BrowserDriver', () => {
   it('BrowserDriver#replace should be ok', done => {
     const driver = new BrowserDriver();
     driver.push('/test1', 'state1', 'payload1');
-    driver.on(RouteDriverEventType.CHANGE, record => {
-      if (record.type === RouteActionType.NONE) return;
-      assert.equal(record.type, 'replace');
+    driver.on(RouteDriverEventType.CHANGE, (type, record, payload) => {
+      assert.equal(type, 'replace');
       assert.equal(record.state, 'state2');
-      assert.equal(record.payload, 'payload2');
+      assert.equal(payload, 'payload2');
       assert.equal(window.history.state.__routeState.id, record.id);
       assert.equal(window.history.state.__routeState.state, record.state);
       assert.equal(window.location.hash, '#/test2');
@@ -97,11 +90,10 @@ describe('src/driver/browser/BrowserDriver', () => {
       const driver = new BrowserDriver();
       driver.push('/test1', 'state1', 'payload1');
       driver.push('/test2', 'state2', 'payload2');
-      driver.on(RouteDriverEventType.CHANGE, record => {
-        if (record.type === RouteActionType.NONE) return;
-        assert.equal(record.type, 'pop');
+      driver.on(RouteDriverEventType.CHANGE, (type, record, payload) => {
+        assert.equal(type, 'pop');
         assert.equal(record.state, 'state1');
-        assert.equal(record.payload, undefined);
+        assert.equal(payload, undefined);
         assert.equal(window.history.state.__routeState.id, record.id);
         assert.equal(window.history.state.__routeState.state, record.state);
         assert.equal(window.location.hash, '#/test1');
@@ -118,11 +110,10 @@ describe('src/driver/browser/BrowserDriver', () => {
       await sleep(100);
       window.history.go(1);
       await new Promise(resolve => {
-        driver.on(RouteDriverEventType.CHANGE, record => {
-          if (record.type === RouteActionType.NONE) return;
-          assert.equal(record.type, 'push');
+        driver.on(RouteDriverEventType.CHANGE, (type, record, payload) => {
+          assert.equal(type, 'push');
           assert.equal(record.state, 'state2');
-          assert.equal(record.payload, undefined);
+          assert.equal(payload, undefined);
           assert.equal(window.history.state.__routeState.id, record.id);
           assert.equal(window.history.state.__routeState.state, record.state);
           assert.equal(window.location.hash, '#/test2');
@@ -132,14 +123,14 @@ describe('src/driver/browser/BrowserDriver', () => {
     });
     // it('new url should be ok', done => {
     //   const driver = new BrowserDriver();
-    //   driver.on(RouteDriverEventType.CHANGE, record => {
+    //   driver.on(RouteDriverEventType.CHANGE,  (type, record, payload) => {
     //     console.log('record', record);
-    //     if (record.type === RouteActionType.NONE) return;
+    //
 
     //     assert.equal(record.path, '/hash');
-    //     assert.equal(record.type, 'push');
+    //     assert.equal(type, 'push');
     //     assert.equal(record.state, undefined);
-    //     assert.equal(record.payload, undefined);
+    //     assert.equal(payload, undefined);
     //     assert.equal(window.history.state.__routeState.id, record.id);
     //     done();
     //   });
@@ -154,7 +145,7 @@ describe('src/driver/browser/BrowserDriver', () => {
   it('BrowserDriver#generateNextId should be ok', done => {
     const driver = new BrowserDriver();
     const id = driver.generateNextId();
-    driver.on(RouteDriverEventType.CHANGE, record => {
+    driver.on(RouteDriverEventType.CHANGE, (type, record, payload) => {
       if (record.path === '/test') {
         try {
           assert.equal(record.id, id);
@@ -171,7 +162,7 @@ describe('src/driver/browser/BrowserDriver', () => {
     const driver = new BrowserDriver();
     const id = driver.generateNextId();
     driver.deprecateNextId();
-    driver.on(RouteDriverEventType.CHANGE, record => {
+    driver.on(RouteDriverEventType.CHANGE, (type, record, payload) => {
       if (record.path === '/test') {
         try {
           assert.notEqual(record.id, id);
@@ -187,8 +178,7 @@ describe('src/driver/browser/BrowserDriver', () => {
   it('BrowserDriver#constructor should be ok ', done => {
     const driver = new BrowserDriver({ mode: Mode.history });
 
-    driver.on(RouteDriverEventType.CHANGE, record => {
-      if (record.type === RouteActionType.NONE) return;
+    driver.on(RouteDriverEventType.CHANGE, (type, record, payload) => {
       assert.equal(window.location.pathname, '/test1');
       assert.equal(window.location.hash, '');
       done();
