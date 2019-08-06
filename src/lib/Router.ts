@@ -1,5 +1,5 @@
-import {  RouteActionType } from '../interface/common';
-import { IRouterDriver, RouteDriverEventType, IRouteRecord } from '../interface/driver';
+import { RouteActionType } from '../interface/common';
+import { IRouterDriver, IRouteRecord, RouteDriverEventType } from '../interface/driver';
 import { IRouteManager } from '../interface/routeManager';
 import {
   IBaseNavigationOptions,

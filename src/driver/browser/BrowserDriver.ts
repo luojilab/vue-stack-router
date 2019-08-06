@@ -1,5 +1,5 @@
 import { RouteActionType } from '../../interface/common';
-import { IDriverEventMap, IRouterDriver, RouteDriverEventType, IRouteRecord } from '../../interface/driver';
+import { IDriverEventMap, IRouterDriver, IRouteRecord, RouteDriverEventType } from '../../interface/driver';
 import EventEmitter from '../../lib/EventEmitter';
 import IdGenerator from '../../utils/IdGenerator';
 interface IHistoryRouteState {
