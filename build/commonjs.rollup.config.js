@@ -7,6 +7,11 @@ export default {
     name: "VueStackRouter",
     exports: "named"
   },
-  plugins: [typescript({ target: "es5" })],
+  plugins: [
+    typescript({
+      tsconfig: "./tsconfig.json",
+      tsconfigOverride: { compilerOptions: { target: "es5" } }
+    })
+  ],
   external: ["vue"]
 };
