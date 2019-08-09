@@ -16,7 +16,7 @@ import {
   preActionCallback,
   RouteEventType
 } from '../interface/router';
-import { isNameLocation, isPathnameLocation } from '../utils/helpers';
+import { isNameLocation, isPathnameLocation, normalizePath } from '../utils/helpers';
 import { getPathnameAndQuery, parseToSearchStr } from '../utils/url';
 import EventEmitter from './EventEmitter';
 import RouteManager from './route/RouteManager';
@@ -190,14 +190,14 @@ export default class Router<Component> extends EventEmitter<IRouterEventMap<Comp
   private getPathAndState<T extends INavigationOptions>(location: string | ILocation<T>) {
     if (typeof location === 'string') {
       return {
-        path: location,
+        path: normalizePath(location),
         state: undefined,
         transition: undefined
       };
     }
     let pathname = '';
     if (isPathnameLocation(location)) {
-      pathname = location.pathname;
+      pathname = normalizePath(location.pathname);
     }
     if (isNameLocation(location)) {
       pathname = this.routeManager.getPathnameByRouteName(location.name, location.params) || '';
