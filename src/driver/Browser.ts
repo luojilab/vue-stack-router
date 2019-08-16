@@ -1,7 +1,7 @@
-import { RouteActionType } from '../../interface/common';
-import { IDriverEventMap, IRouterDriver, IRouteRecord, RouteDriverEventType } from '../../interface/driver';
-import EventEmitter from '../../lib/EventEmitter';
-import IdGenerator from '../../utils/IdGenerator';
+import { RouteActionType } from '../interface/common';
+import { IDriverEventMap, IRouterDriver, IRouteRecord, RouteDriverEventType } from '../interface/driver';
+import EventEmitter from '../lib/EventEmitter';
+import IdGenerator from '../utils/IdGenerator';
 interface IHistoryRouteState {
   __routeState: {
     id: string;

@@ -1,5 +1,5 @@
 import { strict as assert } from 'assert';
-import ServerDriver from '../../../src/driver/browser/ServerDriver';
+import ServerDriver from '../../../src/driver/Server';
 import { RouteActionType, RouteDriverEventType } from '../../../src/types';
 import { sleep } from '../../helpers/utils';
 

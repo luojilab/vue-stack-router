@@ -1,5 +1,5 @@
 import { strict as assert } from 'assert';
-import ServerDriver from '../../src/driver/browser/ServerDriver';
+import ServerDriver from '../../src/driver/Server';
 import RouteManager from '../../src/lib/route/RouteManager';
 import Router from '../../src/lib/Router';
 import { IRouteConfig, IRouter, IRouterDriver } from '../../src/types';
