@@ -1,6 +1,6 @@
 {
   "name": "vue-stack-router",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Vue stack router",
   "main": "dist/vue-stack-router.js",
   "module": "dist/vue-stack-router.esm.js",
@@ -11,7 +11,7 @@
     "preversion": "npm run build",
     "postversion": "git push && git push --tags",
     "doc": "docsify serve docs",
-    "lint":"tslint -c tslint.json 'src/**/*.ts'"
+    "lint": "tslint -c tslint.json 'src/**/*.ts'"
   },
   "author": "jiangq.leaves@gmail.com",
   "license": "MIT",
