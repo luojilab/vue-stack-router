@@ -1,5 +1,5 @@
-import BrowserDriver from './driver/browser/BrowserDriver';
-import ServerDriver from './driver/browser/ServerDriver';
+import BrowserDriver from './driver/Browser';
+import ServerDriver from './driver/Server';
 import installer from './lib/installer';
 import Router from './lib/Router';
 import RouterView from './view/RouterView';
