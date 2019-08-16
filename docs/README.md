@@ -342,7 +342,7 @@ const router = new Router({
   routes: [
     { path: '/', component: Home },
     // 或者
-    { path: '/bar', component: import('../bar.vue') }
+    { path: '/bar', component: () => import('../bar.vue') }
   ]
 }, driver);
 ```
