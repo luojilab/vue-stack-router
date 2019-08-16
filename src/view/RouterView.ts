@@ -105,13 +105,17 @@ export default Vue.extend({
       //   vNodeData.class[`${transitionName}-${transitionStage}-active`] = this.isPreRendering();
       // }
       const vnode = h(config.component, vNodeData);
-      vnode.tag = `${vnode.tag}-${route.id}`;
       if (cachedVNode !== undefined) {
         vnode.componentInstance = cachedVNode.componentInstance;
       }
       this.vnodeCache.set(route.id, vnode);
-      vnode.data!.keepAlive = true;
-      vnode.key = `__route-${route.id}`;
+      if (vnode.data !== undefined) {
+        vnode.data.keepAlive = true;
+      }
+      if (vnode.tag !== undefined) {
+        vnode.tag = `${vnode.tag}-${route.id}`;
+        vnode.key = `__route-${route.id}`;
+      }
       return vnode;
     },
     renderTransition(h: CreateElement, vNodes: VNode[]): VNode {
