@@ -22,7 +22,9 @@ import EventEmitter from './EventEmitter';
 import RouteManager from './route/RouteManager';
 
 type IRouteAndConfig<Component> = Omit<IRouteInfo<Component>, 'index'>;
-
+interface IDriverPayload {
+  transition?: string;
+}
 /**
  * Router
  *
@@ -125,7 +127,8 @@ export default class Router<Component> extends EventEmitter<IRouterEventMap<Comp
    */
   public push<T extends INavigationOptions>(location: string | ILocation<T>): void {
     const { path, state, transition } = this.getPathAndState<T>(location);
-    this.driver.push(path, state, { transition });
+    const payload: IDriverPayload = { transition };
+    this.driver.push(path, state, payload);
   }
 
   /**
@@ -136,13 +139,15 @@ export default class Router<Component> extends EventEmitter<IRouterEventMap<Comp
    * @returns {void}
    * @memberof Router
    */
-  public pop<T extends IPopNavigationOptions>(option?: Partial<T>): void {
+  public pop<T extends IPopNavigationOptions>(option: Partial<T> = {}): void {
     if (this.routeStack.length <= 1) return;
-    let n: number = (option && option.n) || 1;
+    let { n = 1 } = option;
+    const { transition } = option;
     if (n > this.routeStack.length - 1) {
       n = this.routeStack.length - 1;
     }
-    this.driver.pop(n, option);
+    const payload: IDriverPayload = { transition };
+    this.driver.pop(n, payload);
   }
 
   /**
@@ -154,7 +159,8 @@ export default class Router<Component> extends EventEmitter<IRouterEventMap<Comp
    */
   public replace<T extends INavigationOptions>(location: string | ILocation<T>): void {
     const { path, state, transition: transition } = this.getPathAndState<T>(location);
-    this.driver.replace(path, state, { transition });
+    const payload: IDriverPayload = { transition };
+    this.driver.replace(path, state, payload);
   }
 
   /**
