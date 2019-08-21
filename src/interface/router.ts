@@ -64,6 +64,7 @@ export type preActionCallback = (cancel: boolean) => void;
 
 export interface IRouter<Component> extends IEventEmitter<IRouterEventMap<Component>> {
   readonly currentRouteInfo: IRouteInfo<Component> | undefined;
+  registerRoutes(routes: Array<IRouteConfig<Component>>): void;
   push<T extends INavigationOptions>(location: string | ILocation<T>): void;
   prepush<T extends INavigationOptions>(location: string | ILocation<T>): preActionCallback;
   pop<T extends IPopNavigationOptions>(option?: Partial<T>): void;
@@ -77,8 +78,4 @@ export interface IRouteInfo<Component> {
   index: number;
   route: IRoute;
   config: IRouteConfig<Component>;
-}
-
-export interface INavigationPayload {
-  transition: unknown;
 }
