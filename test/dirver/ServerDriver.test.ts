@@ -1,7 +1,7 @@
 import { strict as assert } from 'assert';
-import ServerDriver from '../../../src/driver/Server';
-import { RouteActionType, RouteDriverEventType } from '../../../src/types';
-import { sleep } from '../../helpers/utils';
+import ServerDriver from '../../src/driver/Server';
+import { RouteActionType, RouteDriverEventType } from '../../src/types';
+import { sleep } from '../helpers/utils';
 
 describe('src/driver/browser/ServerDriver', () => {
   it('ServerDriver#push should be ok', done => {
