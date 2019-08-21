@@ -136,7 +136,7 @@ describe('src/lib/Router.ts', () => {
       class TestDriver extends ServerDriver {
         public pop(n: number, payload?: unknown): void {
           assert.equal(n, 1);
-          assert.equal(payload, undefined);
+          assert.equal((payload as any).transition, undefined);
           done();
         }
       }

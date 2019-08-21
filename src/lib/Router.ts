@@ -5,7 +5,6 @@ import {
   IBaseNavigationOptions,
   ILocation,
   INavigationOptions,
-  INavigationPayload,
   IPopNavigationOptions,
   IRouteConfig,
   IRouteInfo,
@@ -57,7 +56,7 @@ export default class Router<Component> extends EventEmitter<IRouterEventMap<Comp
     this.driver = driver;
     Object.assign(this.config, option.config);
 
-    this.initRoute(option);
+    this.registerRoutes(option.routes);
     this.initDriverListener();
     this.initRouteInfo();
   }
@@ -175,8 +174,8 @@ export default class Router<Component> extends EventEmitter<IRouterEventMap<Comp
     this.pop(popOption);
   }
 
-  private initRoute(option: IRouterOption<Component>) {
-    option.routes.forEach(route => this.routeManager.register(route.path, route.name, route));
+  public registerRoutes(routes: Array<IRouteConfig<Component>>) {
+    routes.forEach(route => this.routeManager.register(route.path, route.name, route));
   }
 
   private initRouteInfo() {
@@ -262,7 +261,7 @@ export default class Router<Component> extends EventEmitter<IRouterEventMap<Comp
     if (routeInfo === undefined) {
       return;
     }
-    const transition = payload && (payload as INavigationPayload).transition;
+    const transition = this.isDriverPayload(payload) ? payload.transition : undefined;
     this.updateRouteRecords(type, routeInfo, transition);
   }
   private updateRouteRecords(type: RouteActionType, routeInfo: IRouteAndConfig<Component>, transition?: unknown): void {
@@ -292,5 +291,8 @@ export default class Router<Component> extends EventEmitter<IRouterEventMap<Comp
       default:
         this.componentChange(type, transition);
     }
+  }
+  private isDriverPayload(payload: any): payload is IDriverPayload {
+    return payload && typeof payload === 'object' && payload.hasOwnProperty('transition');
   }
 }
