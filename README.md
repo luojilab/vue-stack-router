@@ -10,7 +10,7 @@ vue-stack-router 是一个 [Vue](https://vuejs.org) 路由管理器的社区解�
 - 路由间数据传递
 - 细粒度、可定制的路由过渡效果
 
-### 安装
+## 安装
 
 ```shell
 npm i vue-stack-router -S
@@ -42,7 +42,7 @@ const router = new Router({ routes }, driver);
 Vue.use(installer, { router });
 ```
 
-### 适用场景
+## 适用场景
 
 - 移动端、PWA
 - 客户端中由 Web 承担的 hybrid 部分
