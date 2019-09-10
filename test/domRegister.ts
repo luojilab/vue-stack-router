@@ -7,7 +7,7 @@ export function register() {
     includeNodeLocations: true,
     storageQuota: 10000000
   });
-  globalThis.window = dom.window;
+  globalThis.window = (dom.window as unknown) as (Window & typeof globalThis);
   globalThis.PopStateEvent = dom.window.PopStateEvent;
 }
 export function reject() {
