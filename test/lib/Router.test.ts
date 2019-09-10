@@ -1,11 +1,54 @@
 import { strict as assert } from 'assert';
 import ServerDriver from '../../src/driver/Server';
+import { IRouteConfig, IRouter } from '../../src/interface/router';
 import RouteManager from '../../src/lib/route/RouteManager';
 import Router from '../../src/lib/Router';
-import { IRouteConfig, IRouter, IRouterDriver } from '../../src/types';
 // tslint:disable: max-classes-per-file
 
 describe('src/lib/Router.ts', () => {
+  describe('Router#constructor', () => {
+    it('router options should be ok', () => {
+      const driver = new ServerDriver();
+      driver.push('test');
+      const router = new Router<string>(
+        { routes: [{ path: 'test', component: 'bbb' }, { path: 'hh', component: 'aaaa' }] },
+        driver
+      );
+      assert(router.currentRouteInfo);
+      assert.equal(router.currentRouteInfo!.route.path, 'test');
+    });
+    it('router options with redirect should be ok', () => {
+      const driver = new ServerDriver();
+      driver.push('test');
+      const router = new Router<string>(
+        { routes: [{ path: 'test', component: 'bbb', redirect: 'hh' }, { path: 'hh', component: 'aaaa' }] },
+        driver
+      );
+      assert(router.currentRouteInfo);
+      assert.equal(router.currentRouteInfo!.route.path, 'hh');
+
+      const driver1 = new ServerDriver();
+      driver1.push('test/?b=1');
+      const router1 = new Router<string>(
+        {
+          routes: [
+            {
+              path: 'test',
+              component: 'bbb',
+              redirect: to => {
+                assert.equal(to.query.b, '1');
+                return { pathname: 'hh', query: { c: 2 } };
+              }
+            },
+            { path: 'hh', component: 'aaaa' }
+          ]
+        },
+        driver1
+      );
+      assert(router1.currentRouteInfo);
+      assert.equal(router1.currentRouteInfo!.route.path, 'hh?c=2');
+    });
+  });
   describe('Router#push', () => {
     it('string location should be ok', () => {
       class TestDriver extends ServerDriver {
@@ -127,7 +170,7 @@ describe('src/lib/Router.ts', () => {
       const routeManager = new RouteManager<IRouteConfig<string>>();
       const router = new Router({ routes: [] }, new TestDriver(), routeManager);
       router.pop();
-      routeManager.register('/test', '', {
+      routeManager.register({
         component: '',
         path: '/test'
       });

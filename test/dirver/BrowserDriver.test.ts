@@ -1,6 +1,6 @@
 import { strict as assert } from 'assert';
 import BrowserDriver, { Mode } from '../../src/driver/Browser';
-import { RouteDriverEventType } from '../../src/types';
+import { RouteDriverEventType } from '../../src/interface/driver';
 import { register, reject } from '../domRegister';
 import { sleep } from '../helpers/utils';
 
