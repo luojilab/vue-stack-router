@@ -13,6 +13,13 @@ export default class ServerDriver extends EventEmitter<IDriverEventMap> implemen
     this.initRouteRecord();
   }
 
+  public changePath(path: string): void {
+    const top = this.stack[this.stack.length - 1];
+    if (top) {
+      top.path = path;
+    }
+  }
+
   public getCurrentRouteRecord(): IRouteRecord {
     return this.stack[this.stack.length - 1];
   }
