@@ -1,4 +1,5 @@
-import { INameLocation, INavigationOptions, IPathnameLocation } from '../interface/router';
+import { INameLocation, IPathnameLocation } from '../interface/common';
+import { INavigationOptions } from '../interface/router';
 
 export function isPathnameLocation<T extends INavigationOptions>(location: any): location is IPathnameLocation<T> {
   return location.pathname !== undefined;

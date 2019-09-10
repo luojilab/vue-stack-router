@@ -20,3 +20,17 @@ export enum ViewActionType {
 export interface IQuery {
   [k: string]: unknown;
 }
+
+export type ILocation<T = {}> = INameLocation<T> | IPathnameLocation<T> | string;
+export type INameLocation<T> = {
+  name: string;
+  params?: IQuery;
+  query?: IQuery;
+  hash?: string;
+} & T;
+
+export type IPathnameLocation<T> = {
+  pathname: string;
+  query?: IQuery;
+  hash?: string;
+} & T;
