@@ -25,7 +25,7 @@ describe('src/lib/Router.ts', () => {
         driver
       );
       assert(router.currentRouteInfo);
-      assert.equal(router.currentRouteInfo!.route.path, 'hh');
+      assert.equal(router.currentRouteInfo!.route.path, '/hh');
 
       const driver1 = new ServerDriver();
       driver1.push('test/?b=1');
@@ -46,14 +46,14 @@ describe('src/lib/Router.ts', () => {
         driver1
       );
       assert(router1.currentRouteInfo);
-      assert.equal(router1.currentRouteInfo!.route.path, 'hh?c=2');
+      assert.equal(router1.currentRouteInfo!.route.path, '/hh?c=2');
     });
   });
   describe('Router#push', () => {
     it('string location should be ok', () => {
       class TestDriver extends ServerDriver {
         public push(path: string, state?: unknown, payload?: unknown) {
-          assert.equal(path, 'test');
+          assert.equal(path, '/test');
           assert.equal(state, undefined);
           assert.equal((payload as any).transition, undefined);
         }
@@ -64,18 +64,18 @@ describe('src/lib/Router.ts', () => {
     it('path should be normalized ', () => {
       class TestDriver extends ServerDriver {
         public push(path: string, state?: unknown, payload?: unknown) {
-          assert.equal(path, 'test?a=1');
+          assert.equal(path, '/test?a=1');
           assert.equal(state, undefined);
           assert.equal((payload as any).transition, undefined);
         }
       }
       const router = new Router({ routes: [] }, new TestDriver());
-      router.push('/test/?a=1');
+      router.push('test/?a=1');
     });
     it('pathname location should be ok', () => {
       class TestDriver extends ServerDriver {
         public push(path: string, state?: unknown, payload?: unknown) {
-          assert.equal(path, 'test3?a=2');
+          assert.equal(path, '/test3?a=2');
           assert.equal(state, undefined);
           assert.equal((payload as any).transition, undefined);
         }
@@ -89,7 +89,7 @@ describe('src/lib/Router.ts', () => {
     it('named location should be ok', () => {
       class TestDriver extends ServerDriver {
         public push(path: string, state?: unknown, payload?: unknown) {
-          assert.equal(path, 'test1?a=2');
+          assert.equal(path, '/test1?a=2');
           assert.equal(state, undefined);
           assert.equal((payload as any).transition, undefined);
         }
@@ -110,14 +110,14 @@ describe('src/lib/Router.ts', () => {
     it('named location with params should be ok', () => {
       class TestDriver extends ServerDriver {
         public push(path: string, state?: unknown, payload?: unknown) {
-          assert.equal(path, 'test1/2?a=2');
+          assert.equal(path, '/test1/2?a=2');
           assert.equal(state, undefined);
           assert.equal((payload as any).transition, undefined);
         }
       }
       const routes = [
         {
-          path: 'test1/:id',
+          path: '/test1/:id',
           name: 'testName',
           component: 'aa'
         }
@@ -132,7 +132,7 @@ describe('src/lib/Router.ts', () => {
     it('state should be ok', () => {
       class TestDriver extends ServerDriver {
         public push(path: string, state?: unknown, payload?: unknown) {
-          assert.equal(path, 'test3?a=2');
+          assert.equal(path, '/test3?a=2');
           assert.equal(state, 'state');
           assert.equal((payload as any).transition, undefined);
         }
@@ -147,7 +147,7 @@ describe('src/lib/Router.ts', () => {
     it('transition should be ok', () => {
       class TestDriver extends ServerDriver {
         public push(path: string, state?: unknown, payload?: unknown) {
-          assert.equal(path, 'test3?a=2');
+          assert.equal(path, '/test3?a=2');
           assert.equal(state, undefined);
           assert.equal((payload as any).transition, 'transition');
         }
