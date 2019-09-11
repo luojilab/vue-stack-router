@@ -66,11 +66,11 @@ export default class Router<Component> extends EventEmitter<IRouterEventMap<Comp
     const routeInfo = this.getRouteInfo(id, path, state);
     if (routeInfo === undefined) {
       this.driver.deprecateNextId();
-      return (cancel: boolean) => undefined;
+      return (cancel?: boolean) => undefined;
     }
     const nextRouteInfo: IRouteInfo<Component> = Object.assign({}, routeInfo, { index: this.routeStack.length });
     this.emit(RouteEventType.WILL_CHANGE, RouteActionType.PUSH, nextRouteInfo, transition);
-    return (cancel: boolean) => {
+    return (cancel?: boolean) => {
       if (cancel) {
         this.driver.deprecateNextId();
         this.emit(RouteEventType.CANCEL_CHANGE, nextRouteInfo);
@@ -84,11 +84,11 @@ export default class Router<Component> extends EventEmitter<IRouterEventMap<Comp
     const index = this.routeStack.length - 2;
 
     if (index < 0) {
-      return (cancel: boolean) => undefined;
+      return (cancel?: boolean) => undefined;
     }
     const nextRouteInfo = Object.assign(this.routeStack[index], { index });
     this.emit(RouteEventType.WILL_CHANGE, RouteActionType.POP, nextRouteInfo, option && option.transition);
-    return (cancel: boolean) => {
+    return (cancel?: boolean) => {
       if (cancel) {
         this.emit(RouteEventType.CANCEL_CHANGE, nextRouteInfo);
       } else {
@@ -103,11 +103,11 @@ export default class Router<Component> extends EventEmitter<IRouterEventMap<Comp
     const routeInfo = this.getRouteInfo(id, path, state);
     if (routeInfo === undefined) {
       this.driver.deprecateNextId();
-      return (cancel: boolean) => undefined;
+      return (cancel?: boolean) => undefined;
     }
     const nextRouteInfo: IRouteInfo<Component> = Object.assign({}, routeInfo, { index: this.routeStack.length - 1 });
     this.emit(RouteEventType.WILL_CHANGE, RouteActionType.REPLACE, nextRouteInfo, transition);
-    return (cancel: boolean) => {
+    return (cancel?: boolean) => {
       if (cancel) {
         this.driver.deprecateNextId();
         this.emit(RouteEventType.CANCEL_CHANGE, nextRouteInfo);

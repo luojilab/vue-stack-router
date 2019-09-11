@@ -55,7 +55,7 @@ export interface IRouterEventMap<T> {
   [RouteEventType.DESTROY]: (ids: string[]) => void;
 }
 
-export type preActionCallback = (cancel: boolean) => void;
+export type preActionCallback = (cancel?: boolean) => void;
 
 export interface IRouter<Component> extends IEventEmitter<IRouterEventMap<Component>> {
   readonly currentRouteInfo: IRouteInfo<Component> | undefined;
