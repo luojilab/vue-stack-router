@@ -11,5 +11,5 @@ export function isNameLocation<T extends INavigationOptions>(location: any): loc
 export function normalizePath(path: string): string {
   const [pathname, query] = path.split(/\?/);
   const normalizedPathname = pathname.replace(/\/{2,}/g, '/').replace(/^\/|\/$/g, '');
-  return query === undefined ? normalizedPathname : `${normalizedPathname}?${query}`;
+  return query === undefined ? `/${normalizedPathname}` : `/${normalizedPathname}?${query}`;
 }
