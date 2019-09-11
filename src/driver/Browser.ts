@@ -52,7 +52,7 @@ export default class BrowserDriver extends EventEmitter<IDriverEventMap> impleme
   }
   public push(path: string, state?: unknown, payload?: unknown): void {
     const id = this.nextId || IdGenerator.generateId();
-    this.deprecateNextId();
+    if (this.nextId) this.deprecateNextId();
     window.history.pushState({ __routeState: { id, state } } as IHistoryRouteState, '', this.getUrl(path));
     this.handleRouteChange(RouteActionType.PUSH, id, path, state, payload);
   }
@@ -67,7 +67,7 @@ export default class BrowserDriver extends EventEmitter<IDriverEventMap> impleme
 
   public replace(path: string, state?: unknown, payload?: unknown): void {
     const id = this.nextId || IdGenerator.generateId();
-    this.deprecateNextId();
+    if (this.nextId) this.deprecateNextId();
     window.history.replaceState({ __routeState: { id, state } } as IHistoryRouteState, '', this.getUrl(path));
     this.handleRouteChange(RouteActionType.REPLACE, id, path, state, payload);
   }
@@ -100,7 +100,7 @@ export default class BrowserDriver extends EventEmitter<IDriverEventMap> impleme
     });
   }
   private handlePopstate(e: PopStateEvent) {
-    this.deprecateNextId();
+    if (this.nextId) this.deprecateNextId();
     const historyState = e.state as IHistoryRouteState | null;
     const routeState = historyState && historyState.__routeState;
     if (routeState) {
@@ -119,7 +119,7 @@ export default class BrowserDriver extends EventEmitter<IDriverEventMap> impleme
   }
 
   private getInitRouteRecord(): IRouteRecord {
-    const path = this.getCurrentPath() || '/';
+    const path = this.getCurrentPath();
     let id: string;
     let state: unknown;
     const currentState = window.history.state as IHistoryRouteState;
