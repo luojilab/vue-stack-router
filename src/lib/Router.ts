@@ -80,8 +80,12 @@ export default class Router<Component> extends EventEmitter<IRouterEventMap<Comp
     };
   }
 
-  public prepop<T extends IPopNavigationOptions>(option?: Partial<T>): preActionCallback {
-    const index = this.routeStack.length - 2;
+  public prepop<T extends Partial<IPopNavigationOptions>>(option?: T): preActionCallback {
+    let { n = 1 } = option || {};
+    if (this.routeStack.length > 1 && n > this.routeStack.length - 1) {
+      n = this.routeStack.length - 1;
+    }
+    const index = this.routeStack.length - n - 1;
 
     if (index < 0) {
       return (cancel?: boolean) => undefined;
@@ -137,10 +141,10 @@ export default class Router<Component> extends EventEmitter<IRouterEventMap<Comp
    * @returns {void}
    * @memberof Router
    */
-  public pop<T extends IPopNavigationOptions>(option: Partial<T> = {}): void {
+  public pop<T extends Partial<IPopNavigationOptions>>(option?: T): void {
     if (this.routeStack.length <= 1) return;
-    let { n = 1 } = option;
-    const { transition } = option;
+    let { n = 1 } = option || {};
+    const { transition } = option || {};
     if (n > this.routeStack.length - 1) {
       n = this.routeStack.length - 1;
     }
