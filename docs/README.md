@@ -121,6 +121,33 @@ const router = new Router({
 
 > 通过过配置一个 path 为 `*` 的路由，可以处理所有的未匹配到的路由
 
+#### 重定向
+
+通过配置`routes`的配置项 `redirect` 可以实现重定向的功能
+
+```javascript
+const router = new Router({
+  routes: [
+    { path: '/foo', redirect: '/bar' }
+  ]
+}, driver)
+```
+
+可以配置字符串、`location`、或者是一个方法
+
+```js
+const router = new Router({
+  routes: [
+    { path: '/foo', redirect: info => {
+      const { query, params, hash } = info;
+      return { name: 'bar' } // 或者 '/bar?a=2' 或者 {pathname: 'bar', query: {a: 2}}
+    }}
+  ]
+}, driver)
+```
+
+
+
 #### 动态注册路由
 
 在一些场景，我们需要动态注册一部分路由，可以通过`router.registerRoutes`来注册，例子如下：
