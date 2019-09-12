@@ -13,13 +13,20 @@ export default class ServerDriver extends EventEmitter<IDriverEventMap> implemen
     this.initRouteRecord();
   }
 
+  public changePath(path: string): void {
+    const top = this.stack[this.stack.length - 1];
+    if (top) {
+      top.path = path;
+    }
+  }
+
   public getCurrentRouteRecord(): IRouteRecord {
     return this.stack[this.stack.length - 1];
   }
   public push(path: string, state?: unknown, payload?: unknown): void {
     const id = this.nextId || IdGenerator.generateId();
     this.stack.push({ id, path, state });
-    this.deprecateNextId();
+    if (this.nextId) this.deprecateNextId();
     this.handleRouteChange(RouteActionType.PUSH, id, path, state, payload);
   }
   public pop(n: number, payload?: unknown): void {
@@ -35,7 +42,7 @@ export default class ServerDriver extends EventEmitter<IDriverEventMap> implemen
   }
   public replace(path: string, state?: unknown, payload?: unknown): void {
     const id = this.nextId || IdGenerator.generateId();
-    this.deprecateNextId();
+    if (this.nextId) this.deprecateNextId();
     this.stack.pop();
     this.stack.push({ id, path, state });
     this.handleRouteChange(RouteActionType.REPLACE, id, path, state, payload);

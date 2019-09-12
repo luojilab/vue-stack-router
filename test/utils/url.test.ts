@@ -1,5 +1,5 @@
 import { strict as assert } from 'assert';
-import { getPathnameAndQuery, parseSearchStr, parseToSearchStr } from '../../src/utils/url';
+import { parseSearchStr, parseToSearchStr, parseUrl } from '../../src/utils/url';
 
 describe('src/utils/url.ts', () => {
   it('parseSearchStr should be ok', () => {
@@ -38,16 +38,16 @@ describe('src/utils/url.ts', () => {
     assert.equal(search5, '?a=%28b+a');
   });
   it('getPathnameAndQuery should be ok', () => {
-    const { pathname, query } = getPathnameAndQuery('/mmm/nnn?a=123&b=hah');
+    const { pathname, query } = parseUrl('/mmm/nnn?a=123&b=hah');
     assert.equal(pathname, '/mmm/nnn');
     assert.equal(query.a, '123');
     assert.equal(query.b, 'hah');
 
-    const r2 = getPathnameAndQuery('/mmm/nnn?');
+    const r2 = parseUrl('/mmm/nnn?');
     assert.equal(r2.pathname, '/mmm/nnn');
     assert.equal(Object.keys(r2.query).length, 0);
 
-    const r3 = getPathnameAndQuery('/mmm/nnn');
+    const r3 = parseUrl('/mmm/nnn');
     assert.equal(r3.pathname, '/mmm/nnn');
     assert.equal(Object.keys(r3.query).length, 0);
   });

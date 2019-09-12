@@ -1,12 +1,12 @@
 import { strict as assert } from 'assert';
-import ServerDriver from '../../../src/driver/Server';
-import { RouteActionType, RouteDriverEventType } from '../../../src/types';
-import { sleep } from '../../helpers/utils';
+import ServerDriver from '../../src/driver/Server';
+import { RouteDriverEventType } from '../../src/interface/driver';
+import { sleep } from '../helpers/utils';
 
 describe('src/driver/browser/ServerDriver', () => {
   it('ServerDriver#push should be ok', done => {
     const driver = new ServerDriver();
-    driver.on(RouteDriverEventType.CHANGE,  (type, record, payload) => {
+    driver.on(RouteDriverEventType.CHANGE, (type, record, payload) => {
       try {
         assert.equal(type, 'push');
         assert.equal(record.state, 'state');
@@ -25,7 +25,7 @@ describe('src/driver/browser/ServerDriver', () => {
       driver.push('/test1', 'state1', 'payload1');
       driver.push('/test2', 'state2', 'payload2');
       driver.push('/test3', 'state3', 'payload3');
-      driver.on(RouteDriverEventType.CHANGE,  (type, record, payload) => {
+      driver.on(RouteDriverEventType.CHANGE, (type, record, payload) => {
         assert.equal(type, 'pop');
         assert.equal(record.state, 'state2');
         assert.equal(payload, 'popPayload');
@@ -38,7 +38,7 @@ describe('src/driver/browser/ServerDriver', () => {
       driver.push('/test1', 'state1', 'payload1');
       driver.push('/test2', 'state2', 'payload2');
       driver.push('/test3', 'state3', 'payload3');
-      driver.on(RouteDriverEventType.CHANGE,  (type, record, payload) => {
+      driver.on(RouteDriverEventType.CHANGE, (type, record, payload) => {
         assert.equal(type, 'pop');
         assert.equal(record.state, 'state1');
         assert.equal(payload, 'popPayload');
@@ -51,7 +51,7 @@ describe('src/driver/browser/ServerDriver', () => {
   it('ServerDriver#replace should be ok', done => {
     const driver = new ServerDriver();
     driver.push('/test1', 'state1', 'payload1');
-    driver.on(RouteDriverEventType.CHANGE,  (type, record, payload) => {
+    driver.on(RouteDriverEventType.CHANGE, (type, record, payload) => {
       assert.equal(type, 'replace');
       assert.equal(record.state, 'state2');
       assert.equal(payload, 'payload2');
@@ -63,7 +63,7 @@ describe('src/driver/browser/ServerDriver', () => {
   it('ServerDriver#generateNextId should be ok', done => {
     const driver = new ServerDriver();
     const id = driver.generateNextId();
-    driver.on(RouteDriverEventType.CHANGE,  (type, record, payload) => {
+    driver.on(RouteDriverEventType.CHANGE, (type, record, payload) => {
       if (record.path === '/test') {
         try {
           assert.equal(record.id, id);
@@ -80,7 +80,7 @@ describe('src/driver/browser/ServerDriver', () => {
     const driver = new ServerDriver();
     const id = driver.generateNextId();
     driver.deprecateNextId();
-    driver.on(RouteDriverEventType.CHANGE,  (type, record, payload) => {
+    driver.on(RouteDriverEventType.CHANGE, (type, record, payload) => {
       if (record.path === '/test') {
         try {
           assert.notEqual(record.id, id);

@@ -110,7 +110,7 @@ const driver = new BrowserDriver({ mode: 'hash' });
 const router = new Router({ 
   routes: [
     { path: '/', component: Home },
-    { path: '/bar', component: Bar }
+    { path: '/bar', component: Bar },
     { path: '/foo/:id', name: 'foo', component: Foo, meta: 'anything'}
     { path: '/*', component: Home }
   ]
@@ -120,6 +120,26 @@ const router = new Router({
 当 URL 为 `/` 时，展现的是 `Home` ，为 `/bar` 时，展现的是 `Bar` 组件。如果存在同名的 `path` 或 `name` 后注册的组件会覆盖先注册的
 
 > 通过过配置一个 path 为 `*` 的路由，可以处理所有的未匹配到的路由
+
+#### 动态注册路由
+
+在一些场景，我们需要动态注册一部分路由，可以通过`router.registerRoutes`来注册，例子如下：
+
+```js
+const driver = new BrowserDriver({ mode: 'hash' });
+const router = new Router({ 
+  routes: [
+    { path: '/*', component: Home }
+  ]
+}, driver);
+router.registerRoutes([   
+  { path: '/', component: Home },
+  { path: '/bar', component: Bar },
+  { path: '/foo/:id', name: 'foo', component: Foo, meta: 'anything'}
+])
+```
+
+
 
 ### 路由匹配
 

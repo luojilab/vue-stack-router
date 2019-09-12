@@ -1,11 +1,12 @@
 import { IQuery } from '../../interface/common';
-import { IMatchedRoute, IRouteManager } from '../../interface/routeManager';
+import { IBaseRouteConfig, IMatchedRoute, IRouteManager } from '../../interface/routeManager';
 import { normalizePath } from '../../utils/helpers';
+import { parseUrl } from '../../utils/url';
 import PathTree from './PathTree';
 
-export default class RouteManager<T> implements IRouteManager<T> {
+export default class RouteManager<T extends IBaseRouteConfig> implements IRouteManager<T> {
   private pathRoute: PathTree<T> = new PathTree();
-  private nameRoute: Map<string, { path: string; route: T }> = new Map();
+  private nameRoute: Map<string, T> = new Map();
   public getPathnameByRouteName(name: string, params?: IQuery): string {
     const route = this.nameRoute.get(name);
     if (route === undefined) {
@@ -27,22 +28,27 @@ export default class RouteManager<T> implements IRouteManager<T> {
     }
     return normalizedPath;
   }
-  public register(path: string, name: string | undefined, route: T): void {
-    const normalizedPath = normalizePath(path);
+  public register(route: T): void {
+    const normalizedPath = normalizePath(route.path);
     this.pathRoute.addPath(normalizedPath.split('/'), route);
-    if (name) {
-      this.nameRoute.set(name, { path, route });
+    if (route.name) {
+      this.nameRoute.set(route.name, route);
     }
   }
   public match(path: string): IMatchedRoute<T> | undefined {
     const normalizedPath = normalizePath(path);
-    const pathRoute = this.pathRoute.getDataAndParamsByPaths(normalizedPath.split('/'));
+    const { pathname, query, hash } = parseUrl(normalizedPath);
+    const pathRoute = this.pathRoute.getDataAndParamsByPaths(pathname.split('/'));
     if (pathRoute === undefined) {
       return;
     }
+
     return {
       config: pathRoute.data,
-      params: pathRoute.params
+      pathname,
+      query,
+      params: pathRoute.params,
+      hash
     };
   }
 }

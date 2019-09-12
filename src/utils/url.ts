@@ -47,8 +47,9 @@ export function parseToSearchStr(obj: IQuery): string {
   }, '?');
 }
 
-export function getPathnameAndQuery(path: string) {
+export function parseUrl(path: string) {
   const pathname = path.split(/\?/)[0];
+  const hash: string = path.split(/(\#)/)[1] || '';
   const query = parseSearchStr(path.replace(pathname, ''));
-  return { pathname, query };
+  return { pathname, query, hash };
 }

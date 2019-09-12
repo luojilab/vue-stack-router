@@ -1,6 +1,6 @@
 import { strict as assert } from 'assert';
 import Vue from 'vue';
-import { ViewActionType } from '../../src/types';
+import { ViewActionType } from '../../src/interface/common';
 import invokeHook from '../../src/utils/invokeHook';
 
 describe('src/utils/invokeHook', () => {
