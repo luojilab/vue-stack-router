@@ -137,7 +137,7 @@ export default class BrowserDriver extends BaseEventEmitter<DriverEventMap> impl
     const url = new URL(window.location.href);
     let path: string;
     if (this.mode === Mode.hash) {
-      path = this.getPath(new URL(`x:${url.hash.replace(/^#/, '')}`));
+      path = this.getPath(new URL(`http://x.com/${url.hash.replace(/^#/, '')}`));
     } else {
       path = this.getPath(url);
     }
