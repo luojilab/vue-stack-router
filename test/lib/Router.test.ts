@@ -1,17 +1,18 @@
 import { strict as assert } from 'assert';
 import ServerDriver from '../../src/driver/Server';
-import { ILocation, RouteActionType } from '../../src/interface/common';
-import { IPopNavigationOptions, IRouteConfig, IRouter, RouteEventType } from '../../src/interface/router';
+import { Location, RouteActionType } from '../../src/interface/common';
+import { PopNavigationOptions, RouteConfig, Router, RouteEventType } from '../../src/interface/router';
 import RouteManager from '../../src/lib/route/RouteManager';
-import Router from '../../src/lib/Router';
-// tslint:disable: max-classes-per-file
+import StackRouter from '../../src/lib/Router';
+
+/* eslint-disable @typescript-eslint/explicit-function-return-type,@typescript-eslint/no-non-null-assertion,@typescript-eslint/no-explicit-any */
 
 describe('src/lib/Router.ts', () => {
   describe('Router#constructor', () => {
     it('router options should be ok', () => {
       const driver = new ServerDriver();
       driver.push('test');
-      const router = new Router<string>(
+      const router = new StackRouter<string>(
         { routes: [{ path: 'test', component: 'bbb' }, { path: 'hh', component: 'aaaa' }] },
         driver
       );
@@ -21,7 +22,7 @@ describe('src/lib/Router.ts', () => {
     it('router options with redirect should be ok', () => {
       const driver = new ServerDriver();
       driver.push('test');
-      const router = new Router<string>(
+      const router = new StackRouter<string>(
         { routes: [{ path: 'test', component: 'bbb', redirect: 'hh' }, { path: 'hh', component: 'aaaa' }] },
         driver
       );
@@ -30,7 +31,7 @@ describe('src/lib/Router.ts', () => {
 
       const driver1 = new ServerDriver();
       driver1.push('test/?b=1');
-      const router1 = new Router<string>(
+      const router1 = new StackRouter<string>(
         {
           routes: [
             {
@@ -59,7 +60,7 @@ describe('src/lib/Router.ts', () => {
           assert.equal((payload as any).transition, undefined);
         }
       }
-      const router = new Router({ routes: [] }, new TestDriver());
+      const router = new StackRouter({ routes: [] }, new TestDriver());
       router.push('test');
     });
     it('path should be normalized ', () => {
@@ -70,7 +71,7 @@ describe('src/lib/Router.ts', () => {
           assert.equal((payload as any).transition, undefined);
         }
       }
-      const router = new Router({ routes: [] }, new TestDriver());
+      const router = new StackRouter({ routes: [] }, new TestDriver());
       router.push('test/?a=1');
     });
     it('pathname location should be ok', () => {
@@ -81,7 +82,7 @@ describe('src/lib/Router.ts', () => {
           assert.equal((payload as any).transition, undefined);
         }
       }
-      const router = new Router({ routes: [] }, new TestDriver());
+      const router = new StackRouter({ routes: [] }, new TestDriver());
       router.push({
         pathname: '/test3',
         query: { a: 2 }
@@ -102,7 +103,7 @@ describe('src/lib/Router.ts', () => {
           component: 'aa'
         }
       ];
-      const router = new Router<string>({ routes }, new TestDriver());
+      const router = new StackRouter<string>({ routes }, new TestDriver());
       router.push({
         name: 'testName',
         query: { a: 2 }
@@ -123,7 +124,7 @@ describe('src/lib/Router.ts', () => {
           component: 'aa'
         }
       ];
-      const router = new Router<string>({ routes }, new TestDriver());
+      const router = new StackRouter<string>({ routes }, new TestDriver());
       router.push({
         name: 'testName',
         params: { id: 2 },
@@ -138,7 +139,7 @@ describe('src/lib/Router.ts', () => {
           assert.equal((payload as any).transition, undefined);
         }
       }
-      const router = new Router({ routes: [] }, new TestDriver());
+      const router = new StackRouter({ routes: [] }, new TestDriver());
       router.push({
         pathname: '/test3',
         query: { a: 2 },
@@ -153,7 +154,7 @@ describe('src/lib/Router.ts', () => {
           assert.equal((payload as any).transition, 'transition');
         }
       }
-      const router = new Router({ routes: [] }, new TestDriver());
+      const router = new StackRouter({ routes: [] }, new TestDriver());
       router.push({
         pathname: '/test3',
         query: { a: 2 },
@@ -168,8 +169,8 @@ describe('src/lib/Router.ts', () => {
           assert.fail('should not trigger');
         }
       }
-      const routeManager = new RouteManager<IRouteConfig<string>>();
-      const router = new Router({ routes: [] }, new TestDriver(), routeManager);
+      const routeManager = new RouteManager<RouteConfig<string>>();
+      const router = new StackRouter({ routes: [] }, new TestDriver(), routeManager);
       router.pop();
       routeManager.register({
         component: '',
@@ -190,7 +191,7 @@ describe('src/lib/Router.ts', () => {
           component: 'aa'
         }
       ];
-      const router = new Router({ routes }, new TestDriver());
+      const router = new StackRouter({ routes }, new TestDriver());
       router.push('test1');
       router.push('test1');
       router.pop();
@@ -210,7 +211,7 @@ describe('src/lib/Router.ts', () => {
       ];
       const driver = new TestDriver();
       driver.push('/test1?a=2');
-      const router = new Router({ routes }, driver);
+      const router = new StackRouter({ routes }, driver);
       driver.push('/test1?a=3');
       driver.push('/test1?a=4');
       router.pop({ n: 100 });
@@ -218,7 +219,7 @@ describe('src/lib/Router.ts', () => {
   });
   it('Router#replace');
   it('Router#popToBottom', () => {
-    const router: IRouter<string> = getTestRouter();
+    const router: Router<string> = getTestRouter();
     router.replace('/?a=1');
     router.push('/b?a=1');
     router.push('/c?b=3');
@@ -247,7 +248,7 @@ describe('src/lib/Router.ts', () => {
         }
       ];
 
-      const router = new Router({ routes }, driver);
+      const router = new StackRouter({ routes }, driver);
       router.on(RouteEventType.WILL_CHANGE, (type, route, transitionOption) => {
         assert.equal(type, RouteActionType.PUSH);
         assert(route);
@@ -274,7 +275,7 @@ describe('src/lib/Router.ts', () => {
         }
       ];
 
-      const router = new Router({ routes }, driver);
+      const router = new StackRouter({ routes }, driver);
       router.on(RouteEventType.WILL_CHANGE, (type, route, transitionOption) => {
         assert.fail('should not emit events');
       });
@@ -296,7 +297,7 @@ describe('src/lib/Router.ts', () => {
         }
       ];
 
-      const router = new Router({ routes }, driver);
+      const router = new StackRouter({ routes }, driver);
       router.on(RouteEventType.CANCEL_CHANGE, route => {
         assert(deprecatedNextId);
         done();
@@ -305,8 +306,8 @@ describe('src/lib/Router.ts', () => {
       confirm(true);
     });
     it('confirm prepush should be ok', done => {
-      class TestRouter extends Router<string> {
-        public push(path: ILocation) {
+      class TestRouter extends StackRouter<string> {
+        public push(path: Location) {
           assert.equal(path, '/test1?a=3');
           done();
         }
@@ -335,7 +336,7 @@ describe('src/lib/Router.ts', () => {
       ];
       const driver = new ServerDriver();
       driver.push('/test1?a=2');
-      const router = new Router({ routes }, driver);
+      const router = new StackRouter({ routes }, driver);
       router.on(RouteEventType.WILL_CHANGE, type => {
         assert.fail('should not emit events');
       });
@@ -350,7 +351,7 @@ describe('src/lib/Router.ts', () => {
       ];
       const driver = new ServerDriver();
       driver.push('/test1?a=2');
-      const router = new Router({ routes }, driver);
+      const router = new StackRouter({ routes }, driver);
       driver.push('/test1?a=3');
 
       router.on(RouteEventType.WILL_CHANGE, (type, route, transition) => {
@@ -372,7 +373,7 @@ describe('src/lib/Router.ts', () => {
         }
       ];
 
-      const router = new Router({ routes }, driver);
+      const router = new StackRouter({ routes }, driver);
       driver.push('/test1?a=3');
       router.on(RouteEventType.CANCEL_CHANGE, route => {
         done();
@@ -381,8 +382,8 @@ describe('src/lib/Router.ts', () => {
       confirm(true);
     });
     it('confirm prepop should be ok', done => {
-      class TestRouter extends Router<string> {
-        public pop<T extends Partial<IPopNavigationOptions>>(option?: T) {
+      class TestRouter extends StackRouter<string> {
+        public pop<T extends Partial<PopNavigationOptions>>(option?: T) {
           assert.equal(option!.transition, 'test');
           done();
         }
@@ -404,8 +405,8 @@ describe('src/lib/Router.ts', () => {
       confirm();
     });
     it('invalid prepop params should be ok', done => {
-      class TestRouter extends Router<string> {
-        public pop<T extends Partial<IPopNavigationOptions>>(option?: T) {
+      class TestRouter extends StackRouter<string> {
+        public pop<T extends Partial<PopNavigationOptions>>(option?: T) {
           assert.equal(option!.transition, 'test');
           done();
         }
@@ -430,8 +431,8 @@ describe('src/lib/Router.ts', () => {
   it('Router#prereplace');
 });
 
-function getTestRouter(): IRouter<string> {
-  const routes: Array<IRouteConfig<string>> = [
+function getTestRouter(): Router<string> {
+  const routes: Array<RouteConfig<string>> = [
     {
       path: '/',
       component: 'componentA'
@@ -446,6 +447,6 @@ function getTestRouter(): IRouter<string> {
     }
   ];
   const driver = new ServerDriver();
-  const router = new Router({ routes }, driver);
+  const router = new StackRouter({ routes }, driver);
   return router;
 }

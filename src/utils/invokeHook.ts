@@ -1,7 +1,7 @@
 import Vue from 'vue';
 import { ViewActionType } from '../interface/common';
 
-export default function invokeHook(component: Vue, hookName: ViewActionType) {
+export default function invokeHook(component: Vue, hookName: ViewActionType): void {
   const hook = component.$options[hookName];
   if (hook) {
     hook.call(component);

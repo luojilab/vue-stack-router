@@ -1,13 +1,13 @@
-import { IQuery } from '../../interface/common';
-import { IBaseRouteConfig, IMatchedRoute, IRouteManager } from '../../interface/routeManager';
+import { Query } from '../../interface/common';
+import { BaseRouteConfig, MatchedRoute, RouteManager } from '../../interface/routeManager';
 import { normalizePath } from '../../utils/helpers';
 import { parseUrl } from '../../utils/url';
 import PathTree from './PathTree';
 
-export default class RouteManager<T extends IBaseRouteConfig> implements IRouteManager<T> {
+export default class TreeRouteManager<T extends BaseRouteConfig> implements RouteManager<T> {
   private pathRoute: PathTree<T> = new PathTree();
   private nameRoute: Map<string, T> = new Map();
-  public getPathnameByRouteName(name: string, params?: IQuery): string {
+  public getPathnameByRouteName(name: string, params?: Query): string {
     const route = this.nameRoute.get(name);
     if (route === undefined) {
       return '';
@@ -35,7 +35,7 @@ export default class RouteManager<T extends IBaseRouteConfig> implements IRouteM
       this.nameRoute.set(route.name, route);
     }
   }
-  public match(path: string): IMatchedRoute<T> | undefined {
+  public match(path: string): MatchedRoute<T> | undefined {
     const normalizedPath = normalizePath(path);
     const { pathname, query, hash } = parseUrl(normalizedPath);
     const pathRoute = this.pathRoute.getDataAndParamsByPaths(pathname.split('/'));

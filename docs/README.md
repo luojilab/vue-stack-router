@@ -140,7 +140,7 @@ const router = new Router({
   routes: [
     { path: '/foo', redirect: info => {
       const { query, params, hash } = info;
-      return { name: 'bar' } // 或者 '/bar?a=2' 或者 {pathname: 'bar', query: {a: 2}}
+      return { name: 'bar' } // 或者 '/bar?a=2' 或者 { pathname: 'bar', query: { a: 2 }}
     }}
   ]
 }, driver)

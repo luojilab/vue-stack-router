@@ -1,11 +1,11 @@
 import { Component, VueConstructor } from 'vue';
-import { IRouter } from '../interface/router';
+import { Router } from '../interface/router';
 import RouterView from '../view/RouterView';
-interface IConnectorOptions {
-  router: IRouter<Component>;
+interface ConnectorOptions {
+  router: Router<Component>;
 }
 export default {
-  install(Vue: VueConstructor, options: IConnectorOptions) {
+  install(Vue: VueConstructor, options: ConnectorOptions): void {
     if (Vue.prototype.$router) {
       return;
     }

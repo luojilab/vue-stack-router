@@ -1,20 +1,20 @@
-import { ILocation, IQuery } from './common';
+import { Query } from './common';
 
-export interface IBaseRouteConfig {
+export interface BaseRouteConfig {
   path: string;
   name?: string;
 }
-export interface IMatchedRoute<T extends IBaseRouteConfig> {
+export interface MatchedRoute<T extends BaseRouteConfig> {
   config: T;
-  params: IQuery;
-  query: IQuery;
+  params: Query;
+  query: Query;
   hash: string;
   pathname: string;
   // redirected: boolean;
 }
 
-export interface IRouteManager<T extends IBaseRouteConfig> {
+export interface RouteManager<T extends BaseRouteConfig> {
   register(route: T): void;
-  match(path: string): IMatchedRoute<T> | undefined;
-  getPathnameByRouteName(name: string, params?: IQuery): string;
+  match(path: string): MatchedRoute<T> | undefined;
+  getPathnameByRouteName(name: string, params?: Query): string;
 }

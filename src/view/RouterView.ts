@@ -1,36 +1,36 @@
 import Vue, { Component, CreateElement, VNode, VNodeData } from 'vue';
 import { ViewActionType } from '../interface/common';
-import { IRouteInfo, IRouter, RouteEventType } from '../interface/router';
+import { RouteInfo, Router, RouteEventType } from '../interface/router';
 import invokeHook from '../utils/invokeHook';
 
-interface IData {
-  routeInfo?: IRouteInfo<Component>;
-  preRouteInfo?: IRouteInfo<Component>;
-  nextRouteInfo?: IRouteInfo<Component>;
+interface Data {
+  routeInfo?: RouteInfo<Component>;
+  preRouteInfo?: RouteInfo<Component>;
+  nextRouteInfo?: RouteInfo<Component>;
   vnodeCache: Map<string, VNode>;
   transitionType?: string;
   customTransition?: Transition;
   needDestroyedRouteId?: string;
   preRenderMode: PreRenderMode;
 }
-type Transition = ITransitionOptions | string;
-interface ITransitionDurationConfig {
+type Transition = TransitionOptions | string;
+interface TransitionDurationConfig {
   enter: number;
   leave: number;
 }
-interface ITransitionOptions {
+interface TransitionOptions {
   name: string;
   appear?: boolean;
-  duration: number | ITransitionDurationConfig;
+  duration: number | TransitionDurationConfig;
   mode: string;
   tag: string;
 }
 type PropsTypes<T> = () => T;
-interface IPageViewProps {
+interface PageViewProps {
   path: string;
   query: { [key: string]: string };
   params: { [key: string]: string };
-  state?: any;
+  state?: unknown;
 }
 const enum PreRenderMode {
   PRE_RENDERING = 'preRendering',
@@ -41,12 +41,12 @@ const NO_TRANSITION = '__NO_TRANSITION';
 export default Vue.extend({
   name: 'RouterView',
   data() {
-    return {} as IData;
+    return {} as Data;
   },
   props: {
-    router: Object as PropsTypes<IRouter<Component> | undefined>,
+    router: Object as PropsTypes<Router<Component> | undefined>,
     supportPreRender: Boolean as PropsTypes<boolean>,
-    transition: ([Object, String] as unknown) as PropsTypes<ITransitionOptions | string | undefined>
+    transition: ([Object, String] as unknown) as PropsTypes<TransitionOptions | string | undefined>
   },
   render(h: CreateElement): VNode {
     if (!this.routeInfo) {
@@ -55,7 +55,7 @@ export default Vue.extend({
     const vnode = this.renderRoute(h, this.routeInfo);
     let vNodes = [vnode];
     if (this.nextRouteInfo && this.supportPreRender) {
-      const nextVNode = this.renderRoute(h, this.nextRouteInfo, true);
+      const nextVNode = this.renderRoute(h, this.nextRouteInfo);
       vNodes = [nextVNode, vnode];
     }
     return this.renderTransition(h, vNodes);
@@ -82,7 +82,7 @@ export default Vue.extend({
     event.off(RouteEventType.DESTROY, this.handleRouteDestroy);
   },
   methods: {
-    renderRoute(h: CreateElement, routeInfo: IRouteInfo<Component>, isNext?: boolean): VNode {
+    renderRoute(h: CreateElement, routeInfo: RouteInfo<Component>): VNode {
       const { config, route } = routeInfo;
       const cachedVNode = this.vnodeCache.get(route.id);
       const vNodeData: VNodeData = {
@@ -126,10 +126,10 @@ export default Vue.extend({
       const transitionVnode = h(this.supportPreRender ? 'transition-group' : 'transition', vnodeData, vNodes);
       return transitionVnode;
     },
-    getRouter(): IRouter<Component> {
+    getRouter(): Router<Component> {
       return this.router || this.$router;
     },
-    handleRouteChange(type: string, routeInfo?: IRouteInfo<Component>, transition?: unknown) {
+    handleRouteChange(type: string, routeInfo?: RouteInfo<Component>, transition?: unknown): void {
       if (routeInfo === undefined) {
         return;
       }
@@ -143,7 +143,7 @@ export default Vue.extend({
       this.setCustomTransition(routeInfo, transition);
       this.$forceUpdate();
     },
-    handleRouteWillChange(type: string, routeInfo?: IRouteInfo<Component>, transition?: unknown) {
+    handleRouteWillChange(type: string, routeInfo?: RouteInfo<Component>, transition?: unknown): void {
       if (routeInfo === undefined) {
         return;
       }
@@ -154,7 +154,7 @@ export default Vue.extend({
       this.setCustomTransition(routeInfo, transition);
       this.$forceUpdate();
     },
-    handleRouteChangeCancel(routeInfo: IRouteInfo<Component>) {
+    handleRouteChangeCancel(routeInfo: RouteInfo<Component>): void {
       if (
         routeInfo === undefined ||
         this.nextRouteInfo === undefined ||
@@ -169,7 +169,7 @@ export default Vue.extend({
 
       this.$forceUpdate();
     },
-    handleRouteDestroy(ids: string[]) {
+    handleRouteDestroy(ids: string[]): void {
       ids.forEach(id => {
         if (this.preRouteInfo && this.preRouteInfo.route.id !== id) {
           this.destroyComponent(id);
@@ -179,7 +179,7 @@ export default Vue.extend({
         }
       });
     },
-    destroyComponent(id: string) {
+    destroyComponent(id: string): void {
       const instance = this.getRouteComponentInstance(id);
       if (instance) {
         instance.$destroy();
@@ -190,8 +190,8 @@ export default Vue.extend({
       const vnode = this.vnodeCache.get(id);
       return vnode && vnode.componentInstance;
     },
-    getTransitionProps(): Partial<ITransitionOptions> {
-      const props: Partial<ITransitionOptions> = {
+    getTransitionProps(): Partial<TransitionOptions> {
+      const props: Partial<TransitionOptions> = {
         appear: true,
         tag: 'div'
       };
@@ -221,8 +221,8 @@ export default Vue.extend({
         afterLeave: this.handleTransitionAfterLeave
       };
     },
-    getPageViewProps(routeInfo: IRouteInfo<Component>): IPageViewProps {
-      const props: IPageViewProps = {
+    getPageViewProps(routeInfo: RouteInfo<Component>): PageViewProps {
+      const props: PageViewProps = {
         path: '/',
         params: {},
         query: {},
@@ -233,7 +233,7 @@ export default Vue.extend({
 
       return props;
     },
-    handleTransitionBeforeEnter() {
+    handleTransitionBeforeEnter(): void {
       if (this.routeInfo === undefined) return;
 
       if (this.preRenderMode === PreRenderMode.NONE) {
@@ -252,14 +252,14 @@ export default Vue.extend({
         invokeHook(nextComponent, ViewActionType.WILL_APPEAR);
       }
     },
-    handleTransitionAfterEnter() {
+    handleTransitionAfterEnter(): void {
       if (this.routeInfo === undefined || this.isPreRendering()) return;
       const routeId = this.routeInfo.route.id;
       const component = this.getRouteComponentInstance(routeId);
       if (component === undefined) return;
       invokeHook(component, ViewActionType.DID_APPEAR);
     },
-    handleTransitionBeforeLeave() {
+    handleTransitionBeforeLeave(): void {
       if (this.preRenderMode === PreRenderMode.NONE && this.preRouteInfo !== undefined) {
         const component = this.getRouteComponentInstance(this.preRouteInfo.route.id);
         if (component !== undefined) {
@@ -267,7 +267,7 @@ export default Vue.extend({
         }
       }
     },
-    handleTransitionAfterLeave() {
+    handleTransitionAfterLeave(): void {
       if (this.preRouteInfo !== undefined) {
         const component = this.getRouteComponentInstance(this.preRouteInfo.route.id);
         if (component !== undefined) {
@@ -295,7 +295,7 @@ export default Vue.extend({
         this.needDestroyedRouteId = undefined;
       }
     },
-    setCustomTransition(routeInfo: IRouteInfo<Component>, transition: unknown) {
+    setCustomTransition(routeInfo: RouteInfo<Component>, transition: unknown): void {
       this.customTransition = undefined;
       if (this.isTransition(routeInfo.config.transition)) {
         this.customTransition = routeInfo.config.transition;

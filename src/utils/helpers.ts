@@ -1,11 +1,11 @@
-import { INameLocation, IPathnameLocation } from '../interface/common';
-import { INavigationOptions } from '../interface/router';
+import { NameLocation, PathnameLocation } from '../interface/common';
+import { NavigationOptions } from '../interface/router';
 
-export function isPathnameLocation<T extends INavigationOptions>(location: any): location is IPathnameLocation<T> {
+export function isPathnameLocation<T extends NavigationOptions>(location: any): location is PathnameLocation<T> {
   return location.pathname !== undefined;
 }
 
-export function isNameLocation<T extends INavigationOptions>(location: any): location is INameLocation<T> {
+export function isNameLocation<T extends NavigationOptions>(location: any): location is NameLocation<T> {
   return location.name !== undefined;
 }
 export function normalizePath(path: string): string {

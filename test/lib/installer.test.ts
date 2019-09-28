@@ -1,6 +1,6 @@
 import { strict as assert } from 'assert';
 import { Component, VueConstructor } from 'vue';
-import { IRouter } from '../../src/interface/router';
+import { Router } from '../../src/interface/router';
 import installer from '../../src/lib/installer';
 describe('src/lib/installer.ts', () => {
   it('should be ok', () => {
