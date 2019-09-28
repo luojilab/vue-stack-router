@@ -1,26 +1,26 @@
-import { ILocation, RouteActionType } from '../interface/common';
-import { IRouterDriver, IRouteRecord, RouteDriverEventType } from '../interface/driver';
-import { IRouteManager } from '../interface/routeManager';
+import { Location, RouteActionType } from '../interface/common';
+import { RouterDriver, RouteRecord, RouteDriverEventType } from '../interface/driver';
+import { RouteManager, MatchedRoute } from '../interface/routeManager';
 import {
-  IBaseNavigationOptions,
-  INavigationOptions,
-  IPopNavigationOptions,
-  IRouteConfig,
-  IRouteInfo,
-  IRouter,
-  IRouterConfig,
-  IRouterEventMap,
-  IRouterOption,
+  BaseNavigationOptions,
+  NavigationOptions,
+  PopNavigationOptions,
+  RouteConfig,
+  RouteInfo,
+  Router,
+  RouterConfig,
+  RouterEventMap,
+  RouterOption,
   preActionCallback,
   RouteEventType
 } from '../interface/router';
 import { isNameLocation, isPathnameLocation, normalizePath } from '../utils/helpers';
 import { parseToSearchStr } from '../utils/url';
-import EventEmitter from './EventEmitter';
-import RouteManager from './route/RouteManager';
+import BaseEventEmitter from './EventEmitter';
+import TreeRouteManager from './route/RouteManager';
 
-type IRouteAndConfig<Component> = Omit<IRouteInfo<Component>, 'index'>;
-interface IDriverPayload {
+type IRouteAndConfig<Component> = Omit<RouteInfo<Component>, 'index'>;
+interface DriverPayload {
   transition?: string;
 }
 /**
@@ -28,30 +28,31 @@ interface IDriverPayload {
  *
  * @export
  * @class Router
- * @extends {EventEmitter<IRouterEventMap<Component>>}
+ * @extends {BaseEventEmitter<RouterEventMap<Component>>}
  * @implements {IRouter<Component>}
  * @template Component
  */
-export default class Router<Component> extends EventEmitter<IRouterEventMap<Component>> implements IRouter<Component> {
-  public get currentRouteInfo(): IRouteInfo<Component> | undefined {
+export default class StackRouter<Component> extends BaseEventEmitter<RouterEventMap<Component>>
+  implements Router<Component> {
+  public get currentRouteInfo(): RouteInfo<Component> | undefined {
     const routeAndConfig = this.routeStack[this.routeStack.length - 1];
     if (!routeAndConfig) {
       return;
     }
     return Object.assign(routeAndConfig, { index: this.routeStack.length - 1 });
   }
-  private routeManager: IRouteManager<IRouteConfig<Component>>;
+  private routeManager: RouteManager<RouteConfig<Component>>;
   private routeStack: Array<IRouteAndConfig<Component>> = [];
-  private driver: IRouterDriver;
-  private config: IRouterConfig = { base: '/' };
+  private driver: RouterDriver;
+  private config: RouterConfig = { base: '/' };
 
   constructor(
-    option: IRouterOption<Component>,
-    driver: IRouterDriver,
-    routeManager?: IRouteManager<IRouteConfig<Component>>
+    option: RouterOption<Component>,
+    driver: RouterDriver,
+    routeManager?: RouteManager<RouteConfig<Component>>
   ) {
     super();
-    this.routeManager = routeManager || new RouteManager<IRouteConfig<Component>>();
+    this.routeManager = routeManager || new TreeRouteManager<RouteConfig<Component>>();
     this.driver = driver;
     Object.assign(this.config, option.config);
 
@@ -60,17 +61,17 @@ export default class Router<Component> extends EventEmitter<IRouterEventMap<Comp
     this.initRouteInfo();
   }
 
-  public prepush<T extends Partial<INavigationOptions>>(location: ILocation<T>): preActionCallback {
+  public prepush<T extends Partial<NavigationOptions>>(location: Location<T>): preActionCallback {
     const { path, state, transition } = this.getNormalizedLocation<T>(location);
     const id = this.driver.generateNextId();
     const routeInfo = this.getRouteInfo(id, path, state);
     if (routeInfo === undefined) {
       this.driver.deprecateNextId();
-      return (cancel?: boolean) => undefined;
+      return (): void => undefined;
     }
-    const nextRouteInfo: IRouteInfo<Component> = Object.assign({}, routeInfo, { index: this.routeStack.length });
+    const nextRouteInfo: RouteInfo<Component> = Object.assign({}, routeInfo, { index: this.routeStack.length });
     this.emit(RouteEventType.WILL_CHANGE, RouteActionType.PUSH, nextRouteInfo, transition);
-    return (cancel?: boolean) => {
+    return (cancel?: boolean): void => {
       if (cancel) {
         this.driver.deprecateNextId();
         this.emit(RouteEventType.CANCEL_CHANGE, nextRouteInfo);
@@ -80,7 +81,7 @@ export default class Router<Component> extends EventEmitter<IRouterEventMap<Comp
     };
   }
 
-  public prepop<T extends Partial<IPopNavigationOptions>>(option?: T): preActionCallback {
+  public prepop<T extends Partial<PopNavigationOptions>>(option?: T): preActionCallback {
     let { n = 1 } = option || {};
     if (this.routeStack.length > 1 && n > this.routeStack.length - 1) {
       n = this.routeStack.length - 1;
@@ -88,11 +89,11 @@ export default class Router<Component> extends EventEmitter<IRouterEventMap<Comp
     const index = this.routeStack.length - n - 1;
 
     if (index < 0) {
-      return (cancel?: boolean) => undefined;
+      return (): void => undefined;
     }
     const nextRouteInfo = Object.assign(this.routeStack[index], { index });
     this.emit(RouteEventType.WILL_CHANGE, RouteActionType.POP, nextRouteInfo, option && option.transition);
-    return (cancel?: boolean) => {
+    return (cancel?: boolean): void => {
       if (cancel) {
         this.emit(RouteEventType.CANCEL_CHANGE, nextRouteInfo);
       } else {
@@ -101,17 +102,17 @@ export default class Router<Component> extends EventEmitter<IRouterEventMap<Comp
     };
   }
 
-  public prereplace<T extends Partial<INavigationOptions>>(location: ILocation<T>): preActionCallback {
+  public prereplace<T extends Partial<NavigationOptions>>(location: Location<T>): preActionCallback {
     const { path, state, transition } = this.getNormalizedLocation<T>(location);
     const id = this.driver.generateNextId();
     const routeInfo = this.getRouteInfo(id, path, state);
     if (routeInfo === undefined) {
       this.driver.deprecateNextId();
-      return (cancel?: boolean) => undefined;
+      return (): void => undefined;
     }
-    const nextRouteInfo: IRouteInfo<Component> = Object.assign({}, routeInfo, { index: this.routeStack.length - 1 });
+    const nextRouteInfo: RouteInfo<Component> = Object.assign({}, routeInfo, { index: this.routeStack.length - 1 });
     this.emit(RouteEventType.WILL_CHANGE, RouteActionType.REPLACE, nextRouteInfo, transition);
-    return (cancel?: boolean) => {
+    return (cancel?: boolean): void => {
       if (cancel) {
         this.driver.deprecateNextId();
         this.emit(RouteEventType.CANCEL_CHANGE, nextRouteInfo);
@@ -124,12 +125,12 @@ export default class Router<Component> extends EventEmitter<IRouterEventMap<Comp
   /**
    * Push a new page into the stack
    *
-   * @param {string | ILocation} location
+   * @param {string | Location} location
    * @memberof Router
    */
-  public push<T extends Partial<INavigationOptions>>(location: ILocation<T>): void {
+  public push<T extends Partial<NavigationOptions>>(location: Location<T>): void {
     const { path, state, transition } = this.getNormalizedLocation<T>(location);
-    const payload: IDriverPayload = { transition };
+    const payload: DriverPayload = { transition };
     this.driver.push(path, state, payload);
   }
 
@@ -141,14 +142,14 @@ export default class Router<Component> extends EventEmitter<IRouterEventMap<Comp
    * @returns {void}
    * @memberof Router
    */
-  public pop<T extends Partial<IPopNavigationOptions>>(option?: T): void {
+  public pop<T extends Partial<PopNavigationOptions>>(option?: T): void {
     if (this.routeStack.length <= 1) return;
     let { n = 1 } = option || {};
     const { transition } = option || {};
     if (n > this.routeStack.length - 1) {
       n = this.routeStack.length - 1;
     }
-    const payload: IDriverPayload = { transition };
+    const payload: DriverPayload = { transition };
     this.driver.pop(n, payload);
   }
 
@@ -156,12 +157,12 @@ export default class Router<Component> extends EventEmitter<IRouterEventMap<Comp
    *  Pop the current page
    *
    * @template T
-   * @param {(ILocation<T>)} location
+   * @param {(Location<T>)} location
    * @memberof Router
    */
-  public replace<T extends Partial<INavigationOptions>>(location: ILocation<T>): void {
+  public replace<T extends Partial<NavigationOptions>>(location: Location<T>): void {
     const { path, state, transition: transition } = this.getNormalizedLocation<T>(location);
-    const payload: IDriverPayload = { transition };
+    const payload: DriverPayload = { transition };
     this.driver.replace(path, state, payload);
   }
 
@@ -172,16 +173,16 @@ export default class Router<Component> extends EventEmitter<IRouterEventMap<Comp
    * @param {Partial<T>} [option]
    * @memberof Router
    */
-  public popToBottom<T extends IBaseNavigationOptions>(option?: Partial<T>): void {
+  public popToBottom<T extends BaseNavigationOptions>(option?: Partial<T>): void {
     const popOption = Object.assign({ n: this.routeStack.length - 1 }, option);
     this.pop(popOption);
   }
 
-  public registerRoutes(routes: Array<IRouteConfig<Component>>) {
+  public registerRoutes(routes: Array<RouteConfig<Component>>): void {
     routes.forEach(route => this.routeManager.register(route));
   }
 
-  private initRouteInfo() {
+  private initRouteInfo(): void {
     const { id, path, state } = this.driver.getCurrentRouteRecord();
     const routeInfo = this.getRouteInfo(id, path, state);
     if (routeInfo !== undefined) {
@@ -192,13 +193,19 @@ export default class Router<Component> extends EventEmitter<IRouterEventMap<Comp
     }
   }
 
-  private initDriverListener() {
-    this.driver.on(RouteDriverEventType.CHANGE, (type: RouteActionType, routeRecord: IRouteRecord, payload: unknown) =>
+  private initDriverListener(): void {
+    this.driver.on(RouteDriverEventType.CHANGE, (type: RouteActionType, routeRecord: RouteRecord, payload: unknown) =>
       this.handleRouteChange(type, routeRecord, payload)
     );
   }
 
-  private getNormalizedLocation<T extends Partial<INavigationOptions>>(location: ILocation<T>) {
+  private getNormalizedLocation<T extends Partial<NavigationOptions>>(
+    location: Location<T>
+  ): {
+    path: string;
+    state: unknown;
+    transition: string | undefined;
+  } {
     if (typeof location === 'string') {
       return {
         path: normalizePath(location),
@@ -225,7 +232,9 @@ export default class Router<Component> extends EventEmitter<IRouterEventMap<Comp
     };
   }
 
-  private matchRoute(path: string) {
+  private matchRoute(
+    path: string
+  ): MatchedRoute<RouteConfig<Component>> & { redirected: boolean; path: string } | undefined {
     let currentPath = path;
     let matchedRoute = this.routeManager.match(currentPath);
     let redirected = false;
@@ -277,7 +286,7 @@ export default class Router<Component> extends EventEmitter<IRouterEventMap<Comp
     this.emit(RouteEventType.CHANGE, type, this.currentRouteInfo, transitionOptions);
   }
 
-  private handleRouteChange(type: RouteActionType, routeRecord: IRouteRecord, payload: unknown): void {
+  private handleRouteChange(type: RouteActionType, routeRecord: RouteRecord, payload: unknown): void {
     const { id, path, state } = routeRecord;
     const routeInfo = this.getRouteInfo(id, path, state);
     if (routeInfo === undefined) {
@@ -317,7 +326,7 @@ export default class Router<Component> extends EventEmitter<IRouterEventMap<Comp
         this.componentChange(type, transition);
     }
   }
-  private isDriverPayload(payload: any): payload is IDriverPayload {
-    return payload && typeof payload === 'object' && payload.hasOwnProperty('transition');
+  private isDriverPayload(payload: unknown): payload is DriverPayload {
+    return typeof payload === 'object' && payload !== null && payload.hasOwnProperty('transition');
   }
 }

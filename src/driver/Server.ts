@@ -1,14 +1,14 @@
 import { RouteActionType } from '../interface/common';
-import { IDriverEventMap, IRouterDriver, IRouteRecord, RouteDriverEventType } from '../interface/driver';
-import EventEmitter from '../lib/EventEmitter';
+import { DriverEventMap, RouterDriver, RouteRecord, RouteDriverEventType } from '../interface/driver';
+import BaseEventEmitter from '../lib/EventEmitter';
 import IdGenerator from '../utils/IdGenerator';
 
-export interface IServerDriverOptions {}
+// export interface ServerDriverOptions {}
 
-export default class ServerDriver extends EventEmitter<IDriverEventMap> implements IRouterDriver {
-  private stack: IRouteRecord[] = [];
+export default class ServerDriver extends BaseEventEmitter<DriverEventMap> implements RouterDriver {
+  private stack: RouteRecord[] = [];
   private nextId: string | undefined;
-  constructor(options?: IServerDriverOptions) {
+  constructor() {
     super();
     this.initRouteRecord();
   }
@@ -20,7 +20,7 @@ export default class ServerDriver extends EventEmitter<IDriverEventMap> implemen
     }
   }
 
-  public getCurrentRouteRecord(): IRouteRecord {
+  public getCurrentRouteRecord(): RouteRecord {
     return this.stack[this.stack.length - 1];
   }
   public push(path: string, state?: unknown, payload?: unknown): void {
@@ -51,17 +51,17 @@ export default class ServerDriver extends EventEmitter<IDriverEventMap> implemen
     this.nextId = IdGenerator.generateId();
     return this.nextId;
   }
-  public deprecateNextId() {
+  public deprecateNextId(): void {
     this.nextId = undefined;
   }
-  private initRouteRecord() {
+  private initRouteRecord(): void {
     this.stack.push({
       id: IdGenerator.generateId(),
       path: '/'
     });
   }
-  private handleRouteChange(type: RouteActionType, id: string, path: string, state?: unknown, payload?: unknown) {
-    const routeRecord: IRouteRecord = { id, path, state };
+  private handleRouteChange(type: RouteActionType, id: string, path: string, state?: unknown, payload?: unknown): void {
+    const routeRecord: RouteRecord = { id, path, state };
     this.emit(RouteDriverEventType.CHANGE, type, routeRecord, payload);
   }
 }

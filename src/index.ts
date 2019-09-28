@@ -5,22 +5,22 @@ import Router from './lib/Router';
 import RouterView from './view/RouterView';
 
 export {
-  IEventEmitter,
+  EventEmitter as IEventEmitter,
   RouteActionType,
   ViewActionType,
-  ILocation,
-  IPathnameLocation,
-  INameLocation
+  Location as ILocation,
+  PathnameLocation as IPathnameLocation,
+  NameLocation as INameLocation
 } from './interface/common';
-export { IDriverEventMap, IRouterDriver, RouteDriverEventType, IRouteRecord } from './interface/driver';
-export { IMatchedRoute, IRouteManager } from './interface/routeManager';
+export { DriverEventMap as IDriverEventMap, RouterDriver as IRouterDriver, RouteDriverEventType, RouteRecord as IRouteRecord } from './interface/driver';
+export { MatchedRoute as IMatchedRoute, RouteManager as IRouteManager } from './interface/routeManager';
 export {
-  IRouter,
-  IRouterEventMap,
-  IRouteConfig,
-  IRouteInfo,
-  IRoute,
-  INavigationOptions,
+  Router as IRouter,
+  RouterEventMap as IRouterEventMap,
+  RouteConfig as IRouteConfig,
+  RouteInfo as IRouteInfo,
+  Route as IRoute,
+  NavigationOptions as INavigationOptions,
   RouteEventType
 } from './interface/router';
 

@@ -1,22 +1,22 @@
-import { IQuery } from '../../interface/common';
+import { Query } from '../../interface/common';
 import TreeNode from '../../utils/TreeNode';
 
-interface INodeData<T> {
+interface NodeData<T> {
   path: string;
   parameterName?: string;
-  data?: T;
+  data: T | null;
 }
 
-interface IMatchedPathNode<T> {
+interface MatchedPathNode<T> {
   node: TreeNode<T>;
-  params?: IQuery;
-  final?: boolean;
+  params: Query;
+  final: boolean;
 }
 
 export default class PathTree<T> {
-  public rootNode: TreeNode<INodeData<T>> = new TreeNode({ path: '/' });
+  public rootNode: TreeNode<NodeData<T>> = new TreeNode({ path: '/', data: null });
 
-  public addPath(paths: string[], data: T) {
+  public addPath(paths: string[], data: T): void {
     let currentNode = this.rootNode;
     for (let i = 0; i < paths.length; i++) {
       const path = paths[i];
@@ -25,7 +25,7 @@ export default class PathTree<T> {
         currentNode.addChild('*', finalNode);
         break;
       }
-      const nodeData: INodeData<T> = { path };
+      const nodeData: NodeData<T> = { path, data: null };
       if (path[0] === ':') {
         nodeData.path = ':';
         nodeData.parameterName = path.replace(/^\:/, '');
@@ -38,11 +38,11 @@ export default class PathTree<T> {
       currentNode = node;
     }
   }
-  public getDataAndParamsByPaths(paths: string[]): undefined | { params: IQuery; data: T } {
-    let matchedPaths: Array<IMatchedPathNode<INodeData<T>>> = [{ node: this.rootNode }];
+  public getDataAndParamsByPaths(paths: string[]): undefined | { params: Query; data: T } {
+    let matchedPaths: Array<MatchedPathNode<NodeData<T>>> = [{ node: this.rootNode, params: {}, final: false }];
     for (let i = 0; i < paths.length; i++) {
       const path = paths[i];
-      const currentMatchedPaths: Array<IMatchedPathNode<INodeData<T>>> = [];
+      const currentMatchedPaths: Array<MatchedPathNode<NodeData<T>>> = [];
       for (let j = 0; j < matchedPaths.length; j++) {
         const currentPathNode = matchedPaths[j];
         if (currentPathNode.final) {
@@ -53,19 +53,21 @@ export default class PathTree<T> {
         if (child !== undefined) {
           currentMatchedPaths.push({
             node: child,
-            params: currentPathNode.params
+            params: currentPathNode.params,
+            final: false
           });
         }
         const parameterChild = currentPathNode.node.getChild(':');
-        if (parameterChild !== undefined) {
+        if (parameterChild !== undefined && parameterChild.data.parameterName) {
           currentMatchedPaths.push({
             node: parameterChild,
             params: Object.assign(
               {
-                [parameterChild.data.parameterName!]: path
+                [parameterChild.data.parameterName]: path
               },
               currentPathNode.params
-            )
+            ),
+            final: false
           });
         }
         const matchAllChild = currentPathNode.node.getChild('*');
@@ -80,12 +82,11 @@ export default class PathTree<T> {
       matchedPaths = currentMatchedPaths;
     }
     const matchedPath = matchedPaths.find(path => path.node.data.data !== undefined);
-    if (matchedPath === undefined) {
-      return;
-    }
+    if (matchedPath === undefined) return;
+    if (matchedPath.node.data.data === null) return;
     return {
       params: matchedPath.params || {},
-      data: matchedPath.node.data.data!
+      data: matchedPath.node.data.data
     };
   }
 }

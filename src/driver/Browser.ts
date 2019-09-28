@@ -1,10 +1,10 @@
 import { RouteActionType } from '../interface/common';
-import { IDriverEventMap, IRouterDriver, IRouteRecord, RouteDriverEventType } from '../interface/driver';
-import EventEmitter from '../lib/EventEmitter';
+import { DriverEventMap, RouterDriver, RouteRecord, RouteDriverEventType } from '../interface/driver';
+import BaseEventEmitter from '../lib/EventEmitter';
 import { normalizePath } from '../utils/helpers';
 import IdGenerator from '../utils/IdGenerator';
 
-interface IHistoryRouteState {
+interface HistoryRouteState {
   __routeState: {
     id: string;
     state: unknown;
@@ -16,17 +16,17 @@ export enum Mode {
   hash = 'hash'
 }
 
-export interface IWebDriverOptions {
+export interface WebDriverOptions {
   mode: Mode;
 }
 
-export default class BrowserDriver extends EventEmitter<IDriverEventMap> implements IRouterDriver {
-  private currentRouteRecord: IRouteRecord;
+export default class BrowserDriver extends BaseEventEmitter<DriverEventMap> implements RouterDriver {
+  private currentRouteRecord: RouteRecord;
   private nextId: string | undefined;
   private popPayloads: Array<unknown> = [];
   private documentLoaded = false;
   private mode = Mode.hash;
-  constructor(options?: IWebDriverOptions) {
+  constructor(options?: WebDriverOptions) {
     super();
     if (options) {
       this.mode = options.mode;
@@ -36,14 +36,14 @@ export default class BrowserDriver extends EventEmitter<IDriverEventMap> impleme
     this.initListener();
   }
 
-  public getCurrentRouteRecord(): IRouteRecord {
+  public getCurrentRouteRecord(): RouteRecord {
     return this.currentRouteRecord;
   }
   public generateNextId(): string {
     this.nextId = IdGenerator.generateId();
     return this.nextId;
   }
-  public deprecateNextId() {
+  public deprecateNextId(): void {
     this.nextId = undefined;
   }
   public changePath(path: string): void {
@@ -53,7 +53,7 @@ export default class BrowserDriver extends EventEmitter<IDriverEventMap> impleme
   public push(path: string, state?: unknown, payload?: unknown): void {
     const id = this.nextId || IdGenerator.generateId();
     if (this.nextId) this.deprecateNextId();
-    window.history.pushState({ __routeState: { id, state } } as IHistoryRouteState, '', this.getUrl(path));
+    window.history.pushState({ __routeState: { id, state } } as HistoryRouteState, '', this.getUrl(path));
     this.handleRouteChange(RouteActionType.PUSH, id, path, state, payload);
   }
 
@@ -68,11 +68,11 @@ export default class BrowserDriver extends EventEmitter<IDriverEventMap> impleme
   public replace(path: string, state?: unknown, payload?: unknown): void {
     const id = this.nextId || IdGenerator.generateId();
     if (this.nextId) this.deprecateNextId();
-    window.history.replaceState({ __routeState: { id, state } } as IHistoryRouteState, '', this.getUrl(path));
+    window.history.replaceState({ __routeState: { id, state } } as HistoryRouteState, '', this.getUrl(path));
     this.handleRouteChange(RouteActionType.REPLACE, id, path, state, payload);
   }
 
-  private handleDocumentLoaded() {
+  private handleDocumentLoaded(): void {
     if (window.document.readyState === 'complete') {
       this.documentLoaded = true;
     } else {
@@ -84,13 +84,13 @@ export default class BrowserDriver extends EventEmitter<IDriverEventMap> impleme
     }
   }
 
-  private handleRouteChange(type: RouteActionType, id: string, path: string, state?: unknown, payload?: unknown) {
-    const routeRecord: IRouteRecord = { id, path, state };
+  private handleRouteChange(type: RouteActionType, id: string, path: string, state?: unknown, payload?: unknown): void {
+    const routeRecord: RouteRecord = { id, path, state };
     this.currentRouteRecord = routeRecord;
     this.emit(RouteDriverEventType.CHANGE, type, routeRecord, payload);
   }
 
-  private initListener() {
+  private initListener(): void {
     window.addEventListener('popstate', e => {
       // Old safari will emit a 'popstate' event on page load
       if (!this.documentLoaded) {
@@ -99,9 +99,9 @@ export default class BrowserDriver extends EventEmitter<IDriverEventMap> impleme
       this.handlePopstate(e);
     });
   }
-  private handlePopstate(e: PopStateEvent) {
+  private handlePopstate(e: PopStateEvent): void {
     if (this.nextId) this.deprecateNextId();
-    const historyState = e.state as IHistoryRouteState | null;
+    const historyState = e.state as HistoryRouteState | null;
     const routeState = historyState && historyState.__routeState;
     if (routeState) {
       const { id, state } = routeState;
@@ -113,19 +113,19 @@ export default class BrowserDriver extends EventEmitter<IDriverEventMap> impleme
     } else {
       const path = this.getCurrentPath();
       const id = IdGenerator.generateId();
-      window.history.replaceState({ __routeState: { id } } as IHistoryRouteState, '', this.getUrl(path));
+      window.history.replaceState({ __routeState: { id } } as HistoryRouteState, '', this.getUrl(path));
       this.handleRouteChange(RouteActionType.PUSH, id, path);
     }
   }
 
-  private getInitRouteRecord(): IRouteRecord {
+  private getInitRouteRecord(): RouteRecord {
     const path = this.getCurrentPath();
     let id: string;
     let state: unknown;
-    const currentState = window.history.state as IHistoryRouteState;
+    const currentState = window.history.state as HistoryRouteState;
     if (!currentState || currentState.__routeState === undefined) {
       id = IdGenerator.generateId();
-      window.history.replaceState({ __routeState: { id } } as IHistoryRouteState, '', this.getUrl(path));
+      window.history.replaceState({ __routeState: { id } } as HistoryRouteState, '', this.getUrl(path));
     } else {
       id = currentState.__routeState.id;
       state = currentState.__routeState.state;
@@ -133,7 +133,7 @@ export default class BrowserDriver extends EventEmitter<IDriverEventMap> impleme
     return { id, path, state };
   }
 
-  private getCurrentPath() {
+  private getCurrentPath(): string {
     const url = new URL(window.location.href);
     let path: string;
     if (this.mode === Mode.hash) {
@@ -144,11 +144,11 @@ export default class BrowserDriver extends EventEmitter<IDriverEventMap> impleme
     return normalizePath(path);
   }
 
-  private getPath(url: URL) {
+  private getPath(url: URL): string {
     return url.pathname + url.search;
   }
 
-  private getUrl(path: string) {
+  private getUrl(path: string): string {
     return this.mode === Mode.hash ? `#${path}` : path;
   }
 }

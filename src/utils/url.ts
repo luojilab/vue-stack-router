@@ -1,6 +1,6 @@
-import { IQuery } from '../interface/common';
+import { Query } from '../interface/common';
 
-function encode(str: string) {
+function encode(str: string): string {
   const replace: { [x: string]: string } = {
     '!': '%21',
     '\'': '%27',
@@ -13,7 +13,7 @@ function encode(str: string) {
   return encodeURIComponent(str).replace(/[!'\(\)~]|%20|%00/g, match => replace[match]);
 }
 
-function decode(str: string) {
+function decode(str: string): string {
   return decodeURIComponent(str.replace(/\+/g, ' '));
 }
 export function parseSearchStr(search: string): { [x: string]: string } {
@@ -36,7 +36,7 @@ export function parseSearchStr(search: string): { [x: string]: string } {
   }
   return obj;
 }
-export function parseToSearchStr(obj: IQuery): string {
+export function parseToSearchStr(obj: Query): string {
   const keys = Object.keys(obj);
   if (keys.length === 0) {
     return '';

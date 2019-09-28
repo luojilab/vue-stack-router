@@ -1,4 +1,4 @@
-export interface IEventEmitter<T> {
+export interface EventEmitter<T> {
   on<K extends keyof T>(type: K, listener: T[K]): void;
   off<K extends keyof T>(type: K, listener: T[K]): void;
   emit<K extends keyof T>(type: K, ...params: Parameters<T[K] extends (...args: any[]) => any ? T[K] : never>): void;
@@ -17,20 +17,20 @@ export enum ViewActionType {
   DID_DISAPPEAR = 'didDisappear'
 }
 
-export interface IQuery {
+export interface Query {
   [k: string]: unknown;
 }
 
-export type ILocation<T = {}> = INameLocation<T> | IPathnameLocation<T> | string;
-export type INameLocation<T> = {
+export type Location<T = {}> = NameLocation<T> | PathnameLocation<T> | string;
+export type NameLocation<T> = {
   name: string;
-  params?: IQuery;
-  query?: IQuery;
+  params?: Query;
+  query?: Query;
   hash?: string;
 } & T;
 
-export type IPathnameLocation<T> = {
+export type PathnameLocation<T> = {
   pathname: string;
-  query?: IQuery;
+  query?: Query;
   hash?: string;
 } & T;
