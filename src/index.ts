@@ -3,6 +3,7 @@ import ServerDriver from './driver/Server';
 import installer from './lib/installer';
 import Router from './lib/Router';
 import RouterView from './view/RouterView';
+import BaseEventEmitter from './lib/EventEmitter';
 
 export {
   EventEmitter as IEventEmitter,
@@ -24,4 +25,4 @@ export {
   RouteEventType
 } from './interface/router';
 
-export { Router, BrowserDriver, ServerDriver, RouterView, installer };
+export { Router, BrowserDriver, ServerDriver, RouterView, installer, BaseEventEmitter as EventEmitter };
