@@ -163,10 +163,10 @@ describe('src/lib/Router.ts', () => {
     });
   });
   describe('Router#pop', () => {
-    it('empty stack should be ok', () => {
+    it('empty stack should be ok', (done) => {
       class TestDriver extends ServerDriver {
         public pop(n: number, payload?: unknown): void {
-          assert.fail('should not trigger');
+          done()
         }
       }
       const routeManager = new RouteManager<RouteConfig<string>>();
@@ -195,26 +195,6 @@ describe('src/lib/Router.ts', () => {
       router.push('test1');
       router.push('test1');
       router.pop();
-    });
-    it('the wrong parameter n should be ok', () => {
-      class TestDriver extends ServerDriver {
-        public pop(n: number, payload?: unknown): void {
-          assert.equal(n, 2);
-          assert.equal((payload as any).transition, undefined);
-        }
-      }
-      const routes = [
-        {
-          path: 'test1',
-          component: 'aa'
-        }
-      ];
-      const driver = new TestDriver();
-      driver.push('/test1?a=2');
-      const router = new StackRouter({ routes }, driver);
-      driver.push('/test1?a=3');
-      driver.push('/test1?a=4');
-      router.pop({ n: 100 });
     });
   });
   it('Router#replace');

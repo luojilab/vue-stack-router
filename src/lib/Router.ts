@@ -143,12 +143,8 @@ export default class StackRouter<Component> extends BaseEventEmitter<RouterEvent
    * @memberof Router
    */
   public pop<T extends Partial<PopNavigationOptions>>(option?: T): void {
-    if (this.routeStack.length <= 1) return;
-    let { n = 1 } = option || {};
+    const { n = 1 } = option || {};
     const { transition } = option || {};
-    if (n > this.routeStack.length - 1) {
-      n = this.routeStack.length - 1;
-    }
     const payload: DriverPayload = { transition };
     this.driver.pop(n, payload);
   }
@@ -312,7 +308,7 @@ export default class StackRouter<Component> extends BaseEventEmitter<RouterEvent
       case RouteActionType.POP:
         const index = this.routeStack.findIndex(i => routeInfo.route.id === i.route.id);
         if (index === -1) {
-          this.routeStack.push(routeInfo);
+          this.routeStack = [routeInfo];
           this.componentChange(type, transition);
         } else {
           const destroyedIds = this.routeStack
