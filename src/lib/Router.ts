@@ -304,6 +304,7 @@ export default class StackRouter<Component> extends BaseEventEmitter<RouterEvent
         this.routeStack.pop();
         this.routeStack.push(routeInfo);
         this.componentChange(type, transition);
+        this.emit(RouteEventType.DESTROY, [routeInfo.route.id]);
         break;
       case RouteActionType.POP:
         const index = this.routeStack.findIndex(i => routeInfo.route.id === i.route.id);
