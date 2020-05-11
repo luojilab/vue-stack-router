@@ -301,10 +301,12 @@ export default class StackRouter<Component> extends BaseEventEmitter<RouterEvent
         this.componentChange(type, transition);
         break;
       case RouteActionType.REPLACE:
-        this.routeStack.pop();
+        const preRoute = this.routeStack.pop();
         this.routeStack.push(routeInfo);
         this.componentChange(type, transition);
-        this.emit(RouteEventType.DESTROY, [routeInfo.route.id]);
+        if (preRoute) {
+          this.emit(RouteEventType.DESTROY, [preRoute.route.id]);
+        }
         break;
       case RouteActionType.POP:
         const index = this.routeStack.findIndex(i => routeInfo.route.id === i.route.id);
