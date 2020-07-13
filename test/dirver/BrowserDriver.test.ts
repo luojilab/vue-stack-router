@@ -176,7 +176,7 @@ describe('src/driver/browser/BrowserDriver', () => {
   });
 
   it('BrowserDriver#constructor should be ok ', done => {
-    const driver = new BrowserDriver({ mode: Mode.history });
+    const driver = new BrowserDriver({ mode: 'history' });
 
     driver.on(RouteDriverEventType.CHANGE, (type, record, payload) => {
       assert.equal(window.location.pathname, '/test1');
