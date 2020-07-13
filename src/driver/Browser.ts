@@ -11,10 +11,7 @@ interface HistoryRouteState {
   };
 }
 
-export enum Mode {
-  history = 'history',
-  hash = 'hash'
-}
+export type Mode = 'history' | 'hash';
 
 export interface WebDriverOptions {
   mode: Mode;
@@ -25,7 +22,7 @@ export default class BrowserDriver extends BaseEventEmitter<DriverEventMap> impl
   private nextId: string | undefined;
   private popPayloads: Array<unknown> = [];
   private documentLoaded = false;
-  private mode = Mode.hash;
+  private mode = 'hash';
   constructor(options?: WebDriverOptions) {
     super();
     if (options) {
@@ -136,7 +133,7 @@ export default class BrowserDriver extends BaseEventEmitter<DriverEventMap> impl
   private getCurrentPath(): string {
     const url = new URL(window.location.href);
     let path: string;
-    if (this.mode === Mode.hash) {
+    if (this.mode === 'hash') {
       path = this.getPath(new URL(`http://x.com/${url.hash.replace(/^#/, '')}`));
     } else {
       path = this.getPath(url);
@@ -149,6 +146,6 @@ export default class BrowserDriver extends BaseEventEmitter<DriverEventMap> impl
   }
 
   private getUrl(path: string): string {
-    return this.mode === Mode.hash ? `#${path}` : path;
+    return this.mode === 'hash' ? `#${path}` : path;
   }
 }
