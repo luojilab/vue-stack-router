@@ -1,3 +1,4 @@
+import './vue';
 import BrowserDriver from './driver/Browser';
 import ServerDriver from './driver/Server';
 import installer from './lib/installer';
