@@ -2,7 +2,8 @@ import Vue from 'vue';
 import { ViewActionType } from '../interface/common';
 
 export default function invokeHook(component: Vue, hookName: ViewActionType): void {
-  const hook = component.$options[hookName] as (() => void) | undefined;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const hook = (component.$options as any)[hookName];
   if (hook) {
     hook.call(component);
   }
