@@ -56,7 +56,7 @@ export default class StackRouter<Component> extends BaseEventEmitter<RouterEvent
     this.driver = driver;
     Object.assign(this.config, option.config);
 
-    this.registerRoutes(option.routes);
+    option.routes.forEach(route => this.routeManager.register(route));
     this.initDriverListener();
     this.initRouteInfo();
   }
@@ -176,6 +176,9 @@ export default class StackRouter<Component> extends BaseEventEmitter<RouterEvent
 
   public registerRoutes(routes: Array<RouteConfig<Component>>): void {
     routes.forEach(route => this.routeManager.register(route));
+    if (this.routeStack.length === 0) {
+      this.initRouteInfo();
+    }
   }
 
   private initRouteInfo(): void {
