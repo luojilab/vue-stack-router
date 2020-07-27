@@ -127,7 +127,8 @@ export default Vue.extend({
       return transitionVnode;
     },
     getRouter(): Router<Component> {
-      return this.router || this.$router;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return this.router || (this as any).$router;
     },
     handleRouteChange(type: string, routeInfo?: RouteInfo<Component>, transition?: unknown): void {
       if (routeInfo === undefined) {
