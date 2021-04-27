@@ -119,7 +119,7 @@ const router = new Router({
 
 当 URL 为 `/` 时，展现的是 `Home` ，为 `/bar` 时，展现的是 `Bar` 组件。如果存在同名的 `path` 或 `name` 后注册的组件会覆盖先注册的
 
-> 通过过配置一个 path 为 `*` 的路由，可以处理所有的未匹配到的路由
+> 通过配置一个 path 为 `*` 的路由，可以处理所有的未匹配到的路由
 
 #### 重定向
 
@@ -288,7 +288,7 @@ const router = new Router({ routes:[] }, driver);
 
 当 `mode` 为 `'hash'`时，url为拼接在 `#` 后，如 `http://example.com/#/home`;
 
-当 `mode` 为 `'history'`时，url为拼接在域名后 后，如 `http://example.com/home`;
+当 `mode` 为 `'history'`时，url为拼接在域名后，如 `http://example.com/home`;
 
 
 
@@ -312,7 +312,7 @@ vue-stack-router 内置了 `<transition>` 组件，借助 `<transition>` 组件�
 
 #### 单路由配置
 
-部分路由可能需要由不同的效果，可以在注册路由时设置，如下
+部分路由可能需要有不同的效果，可以在注册路由时设置，如下
 
 ```js
 // ...
@@ -325,7 +325,7 @@ const router = new Router({
 
 #### 动态配置
 
-当部分页面需要支持多种过多效果，或者过渡效果需要由前一个页面来确认，可以在路由跳转时设置
+当部分页面需要支持多种过渡效果，或者过渡效果需要由前一个页面来确认，可以在路由跳转时设置
 
 ```js
 router.push({ path: '/foo', transition: 'spec-route'})
@@ -339,7 +339,7 @@ router.push({ path: '/foo', transition: 'spec-route'})
 
 #### 组件内钩子
 
-`vue-stack-router` 在 Page 组件中注入了一下四个钩子函数：
+`vue-stack-router` 在 Page 组件中注入了以下四个钩子函数：
 
 1. willAppear，将要显示
 2. didAppear，已经显示
@@ -380,7 +380,7 @@ router.on('change', (type, route)=>{
 
 ### 路由懒加载
 
-当我们的代码体积比较大的时候，通过打包工具（如webpack）对代码进行分割懒加载是非常必要的，路由的懒加载通Vue组件的懒加载方式一致，例子如下：
+当我们的代码体积比较大的时候，通过打包工具（如webpack）对代码进行分割懒加载是非常必要的，路由的懒加载同Vue组件的懒加载方式一致，例子如下：
 
 ```js
 const driver = new BrowserDriver({ mode: 'hash' });
@@ -396,7 +396,7 @@ const router = new Router({
 
 ### 预渲染
 
-在某些场景下，我们需要预先渲染出下一个页；或者有些场景需要控制动画（比如实现类似客户端的滑动返回的功能，页面跟随手指移动），这个时候我们会需要路由支持预渲染模式
+在某些场景下，我们需要预先渲染出下一个页面；或者有些场景需要控制动画（比如实现类似客户端的滑动返回的功能，页面跟随手指移动），这个时候我们会需要路由支持预渲染模式
 
 #### 开启预渲染
 
@@ -426,6 +426,6 @@ setTimeout(()=>{
 },1000)
 ```
 
-这样会预选先渲染出好下个页面，在1秒后会展现。
+这样会预先渲染出下个页面，在1秒后会展现。
 
-> **注意：** 预渲染目前仅支持用户自己控制页面动画方式，如实通过js控制页面现滑动返回功能。因为目前动画依赖于 Vue 的 transition-group ，但 vue-stack-router 预渲染的实现方式，存在当前页面动画不生效的问题。后续可能会通过重新实现 transition 的方式来解决这个问题。
+> **注意：** 预渲染目前仅支持用户自己控制页面动画方式。如是通过js控制页面实现滑动返回功能，因为目前动画依赖于 Vue 的 transition-group ，但 vue-stack-router 预渲染的实现方式，存在当前页面动画不生效的问题。后续可能会通过重新实现 transition 的方式来解决这个问题。
